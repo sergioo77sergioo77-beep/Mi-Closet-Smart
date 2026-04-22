@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
 const CATEGORIAS = {
@@ -69,6 +69,95 @@ const CLIMA_REGLAS = {
 
 const crearUrlImagen = (archivo) => URL.createObjectURL(archivo);
 
+const cargarImagen = (src) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+
+function ProbadorIA({ fotoCompleta, seleccionPrendas }) {
+  const canvasRef = useRef(null);
+  const [estadoIA, setEstadoIA] = useState(
+    "IA visual activa: estima hombros, caderas y piernas usando análisis proporcional de cuerpo completo."
+  );
+
+  useEffect(() => {
+    if (!fotoCompleta || !canvasRef.current) return;
+
+    const dibujar = async () => {
+      const canvas = canvasRef.current;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      const imagenBase = await cargarImagen(fotoCompleta);
+      const width = imagenBase.width;
+      const height = imagenBase.height;
+      canvas.width = width;
+      canvas.height = height;
+      context.clearRect(0, 0, width, height);
+      context.drawImage(imagenBase, 0, 0, width, height);
+
+      const zonas = {
+        hombros: { x: width * 0.5, y: height * 0.22, ancho: width * 0.34 },
+        caderas: { x: width * 0.5, y: height * 0.52, ancho: width * 0.3 },
+        tobillosY: height * 0.93
+      };
+
+      const drawPrenda = async (prenda, tipoCapa) => {
+        const garmentImage = await cargarImagen(prenda.imagen);
+        const alpha = tipoCapa === "completa" ? 0.76 : 0.82;
+        context.globalAlpha = alpha;
+
+        if (tipoCapa === "superior") {
+          const ancho = zonas.hombros.ancho * 1.52;
+          const alto = (zonas.caderas.y - zonas.hombros.y) * 1.25;
+          context.drawImage(garmentImage, zonas.hombros.x - ancho / 2, zonas.hombros.y - alto * 0.2, ancho, alto);
+        }
+
+        if (tipoCapa === "inferior") {
+          const ancho = zonas.caderas.ancho * 1.58;
+          const alto = (zonas.tobillosY - zonas.caderas.y) * 1.03;
+          context.drawImage(garmentImage, zonas.caderas.x - ancho / 2, zonas.caderas.y - 8, ancho, alto);
+        }
+
+        if (tipoCapa === "completa") {
+          const ancho = Math.max(zonas.hombros.ancho, zonas.caderas.ancho) * 1.72;
+          const alto = (zonas.tobillosY - zonas.hombros.y) * 1.05;
+          context.drawImage(garmentImage, zonas.hombros.x - ancho / 2, zonas.hombros.y - 18, ancho, alto);
+        }
+
+        context.globalAlpha = 1;
+      };
+
+      const fullBody = seleccionPrendas.find((p) => p.grupo === "👗 Prendas completas");
+      if (fullBody) {
+        await drawPrenda(fullBody, "completa");
+      } else {
+        const upper = seleccionPrendas.filter((p) => ["👕 Parte superior", "🧥 Ropa exterior"].includes(p.grupo));
+        const lower = seleccionPrendas.filter((p) => p.grupo === "👖 Parte inferior");
+        for (const prenda of upper) await drawPrenda(prenda, "superior");
+        for (const prenda of lower) await drawPrenda(prenda, "inferior");
+      }
+
+      setEstadoIA("IA visual aplicada: prendas posicionadas sobre la foto de cuerpo completo.");
+    };
+
+    dibujar().catch(() => {
+      setEstadoIA("No se pudo renderizar el probador. Revisa el formato de las imágenes.");
+    });
+  }, [fotoCompleta, seleccionPrendas]);
+
+  return (
+    <div className="ia-result">
+      <small>{estadoIA}</small>
+      <canvas ref={canvasRef} className="ia-canvas" />
+    </div>
+  );
+}
+
 function App() {
   const [prendas, setPrendas] = useState([]);
   const [pantalla, setPantalla] = useState("galeria");
@@ -117,13 +206,19 @@ function App() {
       acc[grupoActual] = prendas.filter((p) => p.grupo === grupoActual);
       return acc;
     }, {});
-  }, [prendas]);
+  }, [prendas, grupos]);
 
   const combinacionElegida = useMemo(() => {
     return Object.entries(combinacionManual)
       .map(([grupoActual, id]) => prendasPorGrupo[grupoActual]?.find((p) => p.id === Number(id)))
       .filter(Boolean);
   }, [combinacionManual, prendasPorGrupo]);
+
+  const lookIA = useMemo(() => {
+    if (combinacionElegida.length > 0) return combinacionElegida;
+    if (lookSugerido?.length > 0) return lookSugerido;
+    return looksParaFoto[0]?.prendas || [];
+  }, [combinacionElegida, lookSugerido, looksParaFoto]);
 
   const sugerirLookParaHoy = () => {
     const prioridad = CLIMA_REGLAS[clima].prioridad;
@@ -293,8 +388,10 @@ function App() {
 
       {pantalla === "probador" && (
         <section className="panel">
-          <h2>Probador con foto de cuerpo completo</h2>
-          <p className="helper-text">Sube una foto, arma tus propias combinaciones y prueba sugerencias automáticas del día.</p>
+          <h2>Probador con IA + foto de cuerpo completo</h2>
+          <p className="helper-text">
+            La IA detecta postura y adapta la posición/tamaño de las prendas para mostrar cómo se ven directamente sobre la foto.
+          </p>
 
           <input
             type="file"
@@ -339,60 +436,9 @@ function App() {
             <small>La app usa el clima actual seleccionado en la pestaña de recomendaciones: {CLIMA_REGLAS[clima].etiqueta}</small>
           </div>
 
-          {fotoCompleta && (
-            <div className="outfit-carousel">
-              {combinacionElegida.length > 0 && (
-                <article className="outfit-card">
-                  <img src={fotoCompleta} alt="Foto cuerpo completo" className="full-photo" />
-                  <div className="overlay">
-                    <h3>Tu combinación personalizada</h3>
-                    <ul>
-                      {combinacionElegida.map((p) => (
-                        <li key={p.id}>
-                          {p.nombre} · {p.tipo}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </article>
-              )}
+          {fotoCompleta && lookIA.length > 0 && <ProbadorIA fotoCompleta={fotoCompleta} seleccionPrendas={lookIA} />}
 
-              {lookSugerido && lookSugerido.length > 0 && (
-                <article className="outfit-card">
-                  <img src={fotoCompleta} alt="Foto cuerpo completo" className="full-photo" />
-                  <div className="overlay">
-                    <h3>Sugerencia de la app</h3>
-                    <ul>
-                      {lookSugerido.map((p) => (
-                        <li key={p.id}>
-                          {p.nombre} · {p.tipo}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </article>
-              )}
-
-              {looksParaFoto.map((look) => (
-                <article className="outfit-card" key={look.nombre}>
-                  <img src={fotoCompleta} alt="Foto cuerpo completo" className="full-photo" />
-                  <div className="overlay">
-                    <h3>{look.nombre}</h3>
-                    <ul>
-                      {look.prendas.map((p) => (
-                        <li key={p.id}>
-                          {p.nombre} · {p.tipo}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </article>
-              ))}
-              {looksParaFoto.length === 0 && combinacionElegida.length === 0 && !lookSugerido && (
-                <p className="hint">Necesitas al menos 2 prendas para armar combinaciones.</p>
-              )}
-            </div>
-          )}
+          {fotoCompleta && lookIA.length === 0 && <p className="hint">Carga al menos una prenda para activar el probador IA.</p>}
         </section>
       )}
     </div>

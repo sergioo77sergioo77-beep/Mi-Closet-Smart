@@ -83,6 +83,9 @@ function App() {
 
   const [clima, setClima] = useState("templado");
   const [fotoCompleta, setFotoCompleta] = useState(null);
+  const [combinacionManual, setCombinacionManual] = useState({});
+  const [lookSugerido, setLookSugerido] = useState(null);
+  const grupos = Object.keys(CATEGORIAS);
 
   const prendasFiltradas = useMemo(() => {
     return prendas.filter((prenda) => {
@@ -109,6 +112,33 @@ function App() {
     })).filter((look) => look.prendas.length >= 2);
   }, [prendas]);
 
+  const prendasPorGrupo = useMemo(() => {
+    return grupos.reduce((acc, grupoActual) => {
+      acc[grupoActual] = prendas.filter((p) => p.grupo === grupoActual);
+      return acc;
+    }, {});
+  }, [prendas]);
+
+  const combinacionElegida = useMemo(() => {
+    return Object.entries(combinacionManual)
+      .map(([grupoActual, id]) => prendasPorGrupo[grupoActual]?.find((p) => p.id === Number(id)))
+      .filter(Boolean);
+  }, [combinacionManual, prendasPorGrupo]);
+
+  const sugerirLookParaHoy = () => {
+    const prioridad = CLIMA_REGLAS[clima].prioridad;
+    const seleccion = [];
+
+    Object.keys(CATEGORIAS).forEach((grupoActual) => {
+      const opciones = prendasPorGrupo[grupoActual] || [];
+      if (opciones.length === 0) return;
+      const recomendada = opciones.find((p) => prioridad.includes(p.tipo));
+      seleccion.push(recomendada || opciones[0]);
+    });
+
+    setLookSugerido(seleccion);
+  };
+
   const agregarPrenda = () => {
     if (!nombre || !imagen) return;
 
@@ -129,8 +159,6 @@ function App() {
     setGrupo(nuevoGrupo);
     setTipo(CATEGORIAS[nuevoGrupo][0]);
   };
-
-  const grupos = Object.keys(CATEGORIAS);
 
   return (
     <div className={darkMode ? "app dark" : "app"}>
@@ -266,7 +294,7 @@ function App() {
       {pantalla === "probador" && (
         <section className="panel">
           <h2>Probador con foto de cuerpo completo</h2>
-          <p className="helper-text">Sube una foto y desliza lateralmente para revisar ideas de tenidas.</p>
+          <p className="helper-text">Sube una foto, arma tus propias combinaciones y prueba sugerencias automáticas del día.</p>
 
           <input
             type="file"
@@ -276,8 +304,75 @@ function App() {
 
           {!fotoCompleta && <p className="hint">Tip: para mejores resultados, usa fondo claro y postura de frente.</p>}
 
+          <div className="manual-composer">
+            <h3>Arma tu combinación ideal</h3>
+            <div className="form-grid">
+              {grupos.map((grupoActual) => {
+                const opciones = prendasPorGrupo[grupoActual] || [];
+                return (
+                  <select
+                    key={grupoActual}
+                    value={combinacionManual[grupoActual] || ""}
+                    onChange={(e) =>
+                      setCombinacionManual((prev) => ({
+                        ...prev,
+                        [grupoActual]: e.target.value
+                      }))
+                    }
+                  >
+                    <option value="">Sin elegir · {grupoActual}</option>
+                    {opciones.map((prenda) => (
+                      <option key={prenda.id} value={prenda.id}>
+                        {prenda.nombre} · {prenda.tipo}
+                      </option>
+                    ))}
+                  </select>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="sugerencia-row">
+            <button className="btn btn-yellow" onClick={sugerirLookParaHoy}>
+              Sugerir qué ponerme hoy
+            </button>
+            <small>La app usa el clima actual seleccionado en la pestaña de recomendaciones: {CLIMA_REGLAS[clima].etiqueta}</small>
+          </div>
+
           {fotoCompleta && (
             <div className="outfit-carousel">
+              {combinacionElegida.length > 0 && (
+                <article className="outfit-card">
+                  <img src={fotoCompleta} alt="Foto cuerpo completo" className="full-photo" />
+                  <div className="overlay">
+                    <h3>Tu combinación personalizada</h3>
+                    <ul>
+                      {combinacionElegida.map((p) => (
+                        <li key={p.id}>
+                          {p.nombre} · {p.tipo}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              )}
+
+              {lookSugerido && lookSugerido.length > 0 && (
+                <article className="outfit-card">
+                  <img src={fotoCompleta} alt="Foto cuerpo completo" className="full-photo" />
+                  <div className="overlay">
+                    <h3>Sugerencia de la app</h3>
+                    <ul>
+                      {lookSugerido.map((p) => (
+                        <li key={p.id}>
+                          {p.nombre} · {p.tipo}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              )}
+
               {looksParaFoto.map((look) => (
                 <article className="outfit-card" key={look.nombre}>
                   <img src={fotoCompleta} alt="Foto cuerpo completo" className="full-photo" />
@@ -293,7 +388,9 @@ function App() {
                   </div>
                 </article>
               ))}
-              {looksParaFoto.length === 0 && <p className="hint">Necesitas al menos 2 prendas para armar combinaciones.</p>}
+              {looksParaFoto.length === 0 && combinacionElegida.length === 0 && !lookSugerido && (
+                <p className="hint">Necesitas al menos 2 prendas para armar combinaciones.</p>
+              )}
             </div>
           )}
         </section>

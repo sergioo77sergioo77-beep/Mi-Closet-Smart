@@ -215,6 +215,26 @@ select {
   margin-bottom: 12px;
 }
 
+.manual-composer {
+  margin-top: 14px;
+}
+
+.manual-composer h3 {
+  margin: 0 0 8px;
+}
+
+.sugerencia-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 8px 0 4px;
+}
+
+.sugerencia-row small {
+  opacity: 0.8;
+}
+
 .outfit-carousel {
   margin-top: 12px;
   display: grid;

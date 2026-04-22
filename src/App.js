@@ -27,7 +27,7 @@ function App() {
     fondo: darkMode ? "#121212" : "#f5f5f5",
     tarjeta: darkMode ? "#1e1e1e" : "#ffffff",
     texto: darkMode ? "#ffffff" : "#000000",
-    boton: "#00bcd4"
+    boton: "#facc15"
   };
 
   return (
@@ -59,7 +59,7 @@ function App() {
             borderRadius: 8,
             border: "none",
             background: colores.boton,
-            color: "white",
+            color: "#1f2937",
             cursor: "pointer"
           }}
         >
@@ -93,8 +93,8 @@ function App() {
             padding: 10,
             borderRadius: 8,
             border: "none",
-            background: "#4caf50",
-            color: "white",
+            background: "#facc15",
+            color: "#1f2937",
             cursor: "pointer"
           }}
         >

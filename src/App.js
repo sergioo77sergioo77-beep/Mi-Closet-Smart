@@ -27,37 +27,10 @@ const CATEGORIAS = {
     "Falda corta",
     "Calzas / Leggings"
   ],
-  "👗 Prendas completas": [
-    "Vestido",
-    "Enterito / Mono",
-    "Overol",
-    "Conjunto deportivo",
-    "Traje (formal)"
-  ],
-  "🧥 Ropa exterior": [
-    "Cortaviento",
-    "Gabardina",
-    "Chaqueta de cuero",
-    "Chaqueta de mezclilla (jean)",
-    "Polar"
-  ],
-  "👟 Calzado": [
-    "Zapatillas",
-    "Zapatos formales",
-    "Botas",
-    "Botines",
-    "Sandalias",
-    "Chalas"
-  ],
-  "🧢 Accesorios": [
-    "Gorro",
-    "Gorro de lana",
-    "Sombrero",
-    "Bufanda",
-    "Guantes",
-    "Cinturón",
-    "Lentes de sol"
-  ]
+  "👗 Prendas completas": ["Vestido", "Enterito / Mono", "Overol", "Conjunto deportivo", "Traje (formal)"],
+  "🧥 Ropa exterior": ["Cortaviento", "Gabardina", "Chaqueta de cuero", "Chaqueta de mezclilla (jean)", "Polar"],
+  "👟 Calzado": ["Zapatillas", "Zapatos formales", "Botas", "Botines", "Sandalias", "Chalas"],
+  "🧢 Accesorios": ["Gorro", "Gorro de lana", "Sombrero", "Bufanda", "Guantes", "Cinturón", "Lentes de sol"]
 };
 
 const LOOKS_BASE = [
@@ -162,35 +135,48 @@ function App() {
   return (
     <div className={darkMode ? "app dark" : "app"}>
       <header className="header">
-        <h1>Mi Closet Smart 👗</h1>
-        <p>Galería + filtros + recomendaciones + probador con foto de cuerpo completo.</p>
+        <div>
+          <span className="eyebrow">Asistente de estilo personal</span>
+          <h1>Mi Closet Smart 👗</h1>
+          <p>Gestiona prendas, recibe recomendaciones diarias y prueba looks de forma visual.</p>
+        </div>
         <button className="btn btn-yellow" onClick={() => setDarkMode((prev) => !prev)}>
           Modo {darkMode ? "Claro ☀️" : "Oscuro 🌙"}
         </button>
       </header>
+
+      <section className="stats-grid">
+        <article className="stat-card">
+          <span>Total prendas</span>
+          <strong>{prendas.length}</strong>
+        </article>
+        <article className="stat-card">
+          <span>Resultados filtrados</span>
+          <strong>{prendasFiltradas.length}</strong>
+        </article>
+        <article className="stat-card">
+          <span>Looks disponibles</span>
+          <strong>{looksParaFoto.length}</strong>
+        </article>
+      </section>
 
       <nav className="tabs">
         <button onClick={() => setPantalla("galeria")} className={pantalla === "galeria" ? "active" : ""}>
           Galería
         </button>
         <button onClick={() => setPantalla("recomendaciones")} className={pantalla === "recomendaciones" ? "active" : ""}>
-          Recomendaciones diarias
+          Recomendaciones
         </button>
         <button onClick={() => setPantalla("probador")} className={pantalla === "probador" ? "active" : ""}>
-          Probador con foto
+          Probador
         </button>
       </nav>
 
       {pantalla === "galeria" && (
         <section className="panel">
-          <h2>Agregar prenda a tu clóset</h2>
+          <h2>Agregar prenda</h2>
           <div className="form-grid">
-            <input
-              type="text"
-              placeholder="Nombre o detalle"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-            />
+            <input type="text" placeholder="Nombre o detalle" value={nombre} onChange={(e) => setNombre(e.target.value)} />
 
             <select value={grupo} onChange={(e) => cambiarGrupo(e.target.value)}>
               {grupos.map((g) => (
@@ -212,12 +198,15 @@ function App() {
           </button>
 
           <div className="filtros">
-            <h3>Filtros de galería</h3>
-            <select value={filtroGrupo} onChange={(e) => {
-              const nuevo = e.target.value;
-              setFiltroGrupo(nuevo);
-              setFiltroTipo("Todos");
-            }}>
+            <h3>Filtros</h3>
+            <select
+              value={filtroGrupo}
+              onChange={(e) => {
+                const nuevo = e.target.value;
+                setFiltroGrupo(nuevo);
+                setFiltroTipo("Todos");
+              }}
+            >
               <option>Todas</option>
               {grupos.map((g) => (
                 <option key={g}>{g}</option>
@@ -241,7 +230,7 @@ function App() {
                 <small>{p.tipo}</small>
               </article>
             ))}
-            {prendasFiltradas.length === 0 && <p>Aún no hay prendas en este filtro.</p>}
+            {prendasFiltradas.length === 0 && <p className="empty">Aún no hay prendas en este filtro.</p>}
           </div>
         </section>
       )}
@@ -249,7 +238,7 @@ function App() {
       {pantalla === "recomendaciones" && (
         <section className="panel">
           <h2>¿Qué me pongo hoy?</h2>
-          <p>Selecciona el clima y revisa ideas automáticas desde tus prendas.</p>
+          <p className="helper-text">Selecciona el clima y revisa ideas automáticas desde tus prendas.</p>
 
           <div className="clima-row">
             {Object.entries(CLIMA_REGLAS).map(([key, value]) => (
@@ -268,7 +257,7 @@ function App() {
               </article>
             ))}
             {recomendacionesDia.length === 0 && (
-              <p>Sube prendas en tu galería para recibir recomendaciones personalizadas.</p>
+              <p className="empty">Sube prendas en tu galería para recibir recomendaciones personalizadas.</p>
             )}
           </div>
         </section>
@@ -277,9 +266,7 @@ function App() {
       {pantalla === "probador" && (
         <section className="panel">
           <h2>Probador con foto de cuerpo completo</h2>
-          <p>
-            Sube una foto donde salgas de cuerpo completo y desliza lateralmente para revisar ideas de tenidas.
-          </p>
+          <p className="helper-text">Sube una foto y desliza lateralmente para revisar ideas de tenidas.</p>
 
           <input
             type="file"
@@ -298,15 +285,15 @@ function App() {
                     <h3>{look.nombre}</h3>
                     <ul>
                       {look.prendas.map((p) => (
-                        <li key={p.id}>{p.nombre} · {p.tipo}</li>
+                        <li key={p.id}>
+                          {p.nombre} · {p.tipo}
+                        </li>
                       ))}
                     </ul>
                   </div>
                 </article>
               ))}
-              {looksParaFoto.length === 0 && (
-                <p className="hint">Necesitas al menos 2 prendas cargadas para armar combinaciones.</p>
-              )}
+              {looksParaFoto.length === 0 && <p className="hint">Necesitas al menos 2 prendas para armar combinaciones.</p>}
             </div>
           )}
         </section>

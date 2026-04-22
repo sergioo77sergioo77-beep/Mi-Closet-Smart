@@ -228,45 +228,25 @@ select {
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
-  margin: 8px 0 4px;
+  margin: 8px 0 12px;
 }
 
 .sugerencia-row small {
   opacity: 0.8;
 }
 
-.outfit-carousel {
+.ia-result {
   margin-top: 12px;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(260px, 330px);
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.outfit-card {
-  position: relative;
-  min-height: 430px;
+.ia-canvas {
+  width: min(100%, 420px);
   border-radius: 14px;
-  overflow: hidden;
   border: 1px solid #cbd5e1;
-}
-
-.full-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.overlay {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
-  color: white;
-  padding: 14px;
+  background: #0f172a;
 }
 
 .hint {

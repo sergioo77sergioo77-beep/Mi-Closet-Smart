@@ -67,6 +67,10 @@ const CLIMA_REGLAS = {
   }
 };
 
+const OPEN_WEATHER_CITY = "Curico,CL";
+const OPEN_WEATHER_UNITS = "metric";
+const OPEN_WEATHER_LANG = "es";
+
 const crearUrlImagen = (archivo) => URL.createObjectURL(archivo);
 
 const cargarImagen = (src) =>
@@ -172,6 +176,8 @@ function App() {
   const [vistaPreviaImagen, setVistaPreviaImagen] = useState(null);
 
   const [clima, setClima] = useState("templado");
+  const [resumenClima, setResumenClima] = useState(null);
+  const [estadoClimaApi, setEstadoClimaApi] = useState({ loading: false, error: "" });
   const [fotoCompleta, setFotoCompleta] = useState(null);
   const [combinacionManual, setCombinacionManual] = useState({});
   const [lookSugerido, setLookSugerido] = useState(null);
@@ -233,6 +239,55 @@ function App() {
     });
 
     setLookSugerido(seleccion);
+  };
+
+  const clasificarClimaPorAPI = (temperatura, condicion) => {
+    const descripcion = (condicion || "").toLowerCase();
+    if (descripcion.includes("rain") || descripcion.includes("drizzle") || descripcion.includes("thunderstorm")) {
+      return "lluvia";
+    }
+    if (temperatura >= 28) return "calor";
+    if (temperatura <= 14) return "frio";
+    return "templado";
+  };
+
+  const consultarClimaActual = async () => {
+    const apiKey = process.env.REACT_APP_OPENWEATHER_API_KEY;
+    if (!apiKey) {
+      setEstadoClimaApi({
+        loading: false,
+        error: "Falta configurar REACT_APP_OPENWEATHER_API_KEY en el archivo .env"
+      });
+      return;
+    }
+
+    try {
+      setEstadoClimaApi({ loading: true, error: "" });
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${OPEN_WEATHER_CITY}&appid=${apiKey}&units=${OPEN_WEATHER_UNITS}&lang=${OPEN_WEATHER_LANG}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`No se pudo obtener el clima (${response.status})`);
+      }
+
+      const data = await response.json();
+      const temperatura = Math.round(data.main?.temp);
+      const condicionPrincipal = data.weather?.[0]?.main || "";
+      const descripcion = data.weather?.[0]?.description || "Sin descripción";
+      const climaCalculado = clasificarClimaPorAPI(temperatura, condicionPrincipal);
+
+      setResumenClima({
+        ciudad: data.name || "Curicó",
+        temperatura,
+        descripcion
+      });
+      setClima(climaCalculado);
+      setEstadoClimaApi({ loading: false, error: "" });
+    } catch (error) {
+      setEstadoClimaApi({
+        loading: false,
+        error: "No se pudo consultar OpenWeather. Revisa tu API key y conexión."
+      });
+    }
   };
 
   const agregarPrenda = () => {
@@ -380,7 +435,19 @@ function App() {
       {pantalla === "recomendaciones" && (
         <section className="panel">
           <h2>¿Qué me pongo hoy?</h2>
-          <p className="helper-text">Selecciona el clima y revisa ideas automáticas desde tus prendas.</p>
+          <p className="helper-text">Consulta el clima de Curicó en OpenWeather o selecciónalo manualmente.</p>
+
+          <div className="weather-api-row">
+            <button className="btn btn-yellow" onClick={consultarClimaActual} disabled={estadoClimaApi.loading}>
+              {estadoClimaApi.loading ? "Consultando clima..." : "Consultar clima en Curicó"}
+            </button>
+            {resumenClima && !estadoClimaApi.error && (
+              <small>
+                {resumenClima.ciudad}: {resumenClima.temperatura}°C · {resumenClima.descripcion}
+              </small>
+            )}
+          </div>
+          {estadoClimaApi.error && <p className="error-text">{estadoClimaApi.error}</p>}
 
           <div className="clima-row">
             {Object.entries(CLIMA_REGLAS).map(([key, value]) => (

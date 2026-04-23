@@ -252,3 +252,14 @@ select {
 .hint {
   opacity: 0.8;
 }
+
+.preview-container {
+  margin: 4px 0 12px;
+}
+
+.preview-image {
+  width: min(100%, 280px);
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  object-fit: cover;
+}

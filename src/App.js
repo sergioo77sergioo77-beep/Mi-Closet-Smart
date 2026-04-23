@@ -169,6 +169,7 @@ function App() {
   const [grupo, setGrupo] = useState(Object.keys(CATEGORIAS)[0]);
   const [tipo, setTipo] = useState(CATEGORIAS[Object.keys(CATEGORIAS)[0]][0]);
   const [imagen, setImagen] = useState(null);
+  const [vistaPreviaImagen, setVistaPreviaImagen] = useState(null);
 
   const [clima, setClima] = useState("templado");
   const [fotoCompleta, setFotoCompleta] = useState(null);
@@ -237,17 +238,19 @@ function App() {
   const agregarPrenda = () => {
     if (!nombre || !imagen) return;
 
+    const urlImagen = crearUrlImagen(imagen);
     const nuevaPrenda = {
       id: Date.now(),
       nombre,
       grupo,
       tipo,
-      imagen: crearUrlImagen(imagen)
+      imagen: urlImagen
     };
 
     setPrendas((actual) => [nuevaPrenda, ...actual]);
     setNombre("");
     setImagen(null);
+    setVistaPreviaImagen(null);
   };
 
   const cambiarGrupo = (nuevoGrupo) => {
@@ -313,8 +316,24 @@ function App() {
               ))}
             </select>
 
-            <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files?.[0] || null)} />
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => {
+                const archivo = e.target.files?.[0] || null;
+                setImagen(archivo);
+                setVistaPreviaImagen(archivo ? crearUrlImagen(archivo) : null);
+              }}
+            />
           </div>
+
+          {vistaPreviaImagen && (
+            <div className="preview-container">
+              <p className="helper-text">Vista previa de la prenda:</p>
+              <img className="preview-image" src={vistaPreviaImagen} alt="Vista previa de la prenda seleccionada" />
+            </div>
+          )}
 
           <button className="btn btn-yellow" onClick={agregarPrenda}>
             Guardar prenda

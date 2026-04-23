@@ -1,3 +1,18 @@
+# Mi Closet Smart
+
+## Configurar API de OpenWeather (Curicó)
+
+1. Crea un archivo `.env` en la raíz del proyecto.
+2. Agrega tu API key:
+
+```bash
+REACT_APP_OPENWEATHER_API_KEY=tu_api_key_real
+```
+
+3. Reinicia la app (`npm start`).
+4. En la pestaña **Recomendaciones**, presiona **Consultar clima en Curicó** para traer el clima actual desde:
+   `https://api.openweathermap.org/data/2.5/weather?q=Curico,CL&appid=TU_API_KEY&units=metric`
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

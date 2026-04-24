@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import "./App.css";
 
 const CATEGORIAS = {
@@ -73,280 +73,149 @@ const OPEN_WEATHER_LANG = "es";
 
 const crearUrlImagen = (archivo) => URL.createObjectURL(archivo);
 
-const cargarImagen = (src) =>
-  new Promise((resolve, reject) => {
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = src;
-  });
+const crearAvatarSvg = (anchoCuerpo) => {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 280 520'>
+    <rect width='280' height='520' fill='transparent'/>
+    <circle cx='140' cy='70' r='34' fill='#f6cfb8'/>
+    <rect x='${140 - anchoCuerpo / 2}' y='115' width='${anchoCuerpo}' height='170' rx='48' fill='#b7beca'/>
+    <rect x='${140 - anchoCuerpo / 2 - 32}' y='125' width='28' height='140' rx='14' fill='#b7beca'/>
+    <rect x='${140 + anchoCuerpo / 2 + 4}' y='125' width='28' height='140' rx='14' fill='#b7beca'/>
+    <rect x='${140 - anchoCuerpo / 2 + 12}' y='282' width='34' height='190' rx='16' fill='#98a2b3'/>
+    <rect x='${140 + anchoCuerpo / 2 - 46}' y='282' width='34' height='190' rx='16' fill='#98a2b3'/>
+  </svg>`;
 
-const cargarScriptExterno = (src) =>
-  new Promise((resolve, reject) => {
-    const scriptActual = document.querySelector(`script[data-sdk="${src}"]`);
-    if (scriptActual) {
-      if (scriptActual.getAttribute("data-ready") === "true") resolve();
-      else scriptActual.addEventListener("load", () => resolve(), { once: true });
-      return;
-    }
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
 
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.dataset.sdk = src;
-    script.addEventListener(
-      "load",
-      () => {
-        script.setAttribute("data-ready", "true");
-        resolve();
-      },
-      { once: true }
-    );
-    script.addEventListener("error", () => reject(new Error(`No se pudo cargar ${src}`)), { once: true });
-    document.body.appendChild(script);
-  });
-
-const distancia = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const puntoMedio = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-
-const triangulosRect = [
-  [0, 1, 2],
-  [2, 1, 3]
+const CONTEXTURAS = [
+  {
+    id: "delgado",
+    nombre: "Delgado",
+    detalle: "1.75m / 65kg",
+    escala: 0.9,
+    avatar: crearAvatarSvg(84)
+  },
+  {
+    id: "normal",
+    nombre: "Normal",
+    detalle: "1.75m / 75kg",
+    escala: 1,
+    avatar: crearAvatarSvg(102)
+  },
+  {
+    id: "robusto",
+    nombre: "Robusto",
+    detalle: "1.75m / 90kg",
+    escala: 1.1,
+    avatar: crearAvatarSvg(122)
+  }
 ];
 
-const warpTriangle = (context, imagen, src, dst) => {
-  context.save();
-  context.beginPath();
-  context.moveTo(dst[0].x, dst[0].y);
-  context.lineTo(dst[1].x, dst[1].y);
-  context.lineTo(dst[2].x, dst[2].y);
-  context.closePath();
-  context.clip();
+function ProbadorAvatar({ seleccionPrendas, contextura, onCambiarContextura }) {
+  const configContextura = CONTEXTURAS.find((c) => c.id === contextura) || CONTEXTURAS[1];
+  const prendaCompleta = seleccionPrendas.find((p) => p.grupo === "👗 Prendas completas");
+  const capaSuperior = seleccionPrendas.filter((p) => ["👕 Parte superior", "🧥 Ropa exterior"].includes(p.grupo));
+  const capaInferior = seleccionPrendas.filter((p) => p.grupo === "👖 Parte inferior");
 
-  const delta = src[0].x * (src[1].y - src[2].y) + src[1].x * (src[2].y - src[0].y) + src[2].x * (src[0].y - src[1].y);
-  if (Math.abs(delta) < 1e-5) {
-    context.restore();
-    return;
-  }
-
-  const m11 =
-    (dst[0].x * (src[1].y - src[2].y) + dst[1].x * (src[2].y - src[0].y) + dst[2].x * (src[0].y - src[1].y)) / delta;
-  const m12 =
-    (dst[0].x * (src[2].x - src[1].x) + dst[1].x * (src[0].x - src[2].x) + dst[2].x * (src[1].x - src[0].x)) / delta;
-  const m21 =
-    (dst[0].y * (src[1].y - src[2].y) + dst[1].y * (src[2].y - src[0].y) + dst[2].y * (src[0].y - src[1].y)) / delta;
-  const m22 =
-    (dst[0].y * (src[2].x - src[1].x) + dst[1].y * (src[0].x - src[2].x) + dst[2].y * (src[1].x - src[0].x)) / delta;
-  const dx =
-    (dst[0].x * (src[1].x * src[2].y - src[2].x * src[1].y) +
-      dst[1].x * (src[2].x * src[0].y - src[0].x * src[2].y) +
-      dst[2].x * (src[0].x * src[1].y - src[1].x * src[0].y)) /
-    delta;
-  const dy =
-    (dst[0].y * (src[1].x * src[2].y - src[2].x * src[1].y) +
-      dst[1].y * (src[2].x * src[0].y - src[0].x * src[2].y) +
-      dst[2].y * (src[0].x * src[1].y - src[1].x * src[0].y)) /
-    delta;
-
-  context.setTransform(m11, m21, m12, m22, dx, dy);
-  context.drawImage(imagen, 0, 0);
-  context.restore();
-};
-
-const warpRectangulo = (context, imagen, destino, opacidad = 0.72) => {
-  const source = [
-    { x: 0, y: 0 },
-    { x: imagen.width, y: 0 },
-    { x: 0, y: imagen.height },
-    { x: imagen.width, y: imagen.height }
-  ];
-  context.save();
-  context.globalAlpha = opacidad;
-  context.globalCompositeOperation = "multiply";
-  triangulosRect.forEach(([a, b, c]) => {
-    warpTriangle(context, imagen, [source[a], source[b], source[c]], [destino[a], destino[b], destino[c]]);
-  });
-  context.restore();
-};
-
-const crearPoseFallback = (width, height) => {
-  const crear = (x, y, visibility = 0.3) => ({ x, y, visibility });
-  const land = [];
-  land[11] = crear(0.38, 0.22);
-  land[12] = crear(0.62, 0.22);
-  land[13] = crear(0.33, 0.36);
-  land[14] = crear(0.67, 0.36);
-  land[15] = crear(0.3, 0.52);
-  land[16] = crear(0.7, 0.52);
-  land[23] = crear(0.42, 0.52);
-  land[24] = crear(0.58, 0.52);
-  land[25] = crear(0.44, 0.7);
-  land[26] = crear(0.56, 0.7);
-  land[27] = crear(0.44, 0.92);
-  land[28] = crear(0.56, 0.92);
-  land[0] = crear(0.5, 0.1);
-
-  return land.map((p) => (p ? { ...p, x: p.x * width, y: p.y * height } : null));
-};
-
-function ProbadorIA({ fotoCompleta, seleccionPrendas }) {
-  const canvasRef = useRef(null);
-  const poseLandmarkerRef = useRef(null);
-  const modelStateRef = useRef("idle");
-  const [estadoIA, setEstadoIA] = useState(
-    "IA Virtual Try-On lista: detecta pose y ajusta la prenda con deformación."
-  );
-
-  useEffect(() => {
-    let mounted = true;
-    const inicializarPose = async () => {
-      try {
-        if (poseLandmarkerRef.current || modelStateRef.current === "loading") return;
-        modelStateRef.current = "loading";
-        await cargarScriptExterno("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.js");
-        const sdk = window.vision;
-        if (!sdk) throw new Error("SDK de vision no disponible");
-        const vision = await sdk.FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-        );
-        const poseLandmarker = await sdk.PoseLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task"
-          },
-          runningMode: "IMAGE",
-          numPoses: 1,
-          minPoseDetectionConfidence: 0.55,
-          minPosePresenceConfidence: 0.55,
-          minTrackingConfidence: 0.55
-        });
-        if (!mounted) return;
-        poseLandmarkerRef.current = poseLandmarker;
-        modelStateRef.current = "ready";
-      } catch (error) {
-        modelStateRef.current = "error";
-        if (mounted) {
-          setEstadoIA("No se pudo cargar MediaPipe. Se usará modo proporcional de respaldo.");
-        }
-      }
+  const estiloCapa = (tipo, index = 0) => {
+    const base = {
+      position: "absolute",
+      left: "50%",
+      objectFit: "contain",
+      transform: `translateX(-50%) scale(${configContextura.escala})`,
+      transformOrigin: "center top",
+      pointerEvents: "none"
     };
-    inicializarPose();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
-  useEffect(() => {
-    if (!fotoCompleta || !canvasRef.current) return;
-
-    const dibujar = async () => {
-      const canvas = canvasRef.current;
-      const context = canvas.getContext("2d");
-      if (!context) return;
-
-      const imagenBase = await cargarImagen(fotoCompleta);
-      const width = imagenBase.width;
-      const height = imagenBase.height;
-      canvas.width = width;
-      canvas.height = height;
-      context.clearRect(0, 0, width, height);
-      context.drawImage(imagenBase, 0, 0, width, height);
-
-      const resultadosPose =
-        poseLandmarkerRef.current && modelStateRef.current === "ready"
-          ? poseLandmarkerRef.current.detect(imagenBase)
-          : null;
-
-      const landmarksRaw =
-        resultadosPose?.landmarks?.[0]?.map((point) => ({
-          ...point,
-          x: point.x * width,
-          y: point.y * height
-        })) || crearPoseFallback(width, height);
-
-      const punto = (indice, respaldo) => {
-        const candidado = landmarksRaw[indice];
-        if (candidado && (candidado.visibility ?? 0.4) > 0.2) return candidado;
-        return respaldo;
+    if (tipo === "completa") {
+      return {
+        ...base,
+        top: "95px",
+        width: "65%",
+        zIndex: 4
       };
-      const leftShoulder = punto(11, { x: width * 0.38, y: height * 0.22 });
-      const rightShoulder = punto(12, { x: width * 0.62, y: height * 0.22 });
-      const leftHip = punto(23, { x: width * 0.43, y: height * 0.52 });
-      const rightHip = punto(24, { x: width * 0.57, y: height * 0.52 });
-      const leftKnee = punto(25, { x: width * 0.44, y: height * 0.72 });
-      const rightKnee = punto(26, { x: width * 0.56, y: height * 0.72 });
-      const leftAnkle = punto(27, { x: width * 0.44, y: height * 0.92 });
-      const rightAnkle = punto(28, { x: width * 0.56, y: height * 0.92 });
+    }
 
-      const drawPrenda = async (prenda, tipoCapa) => {
-        const garmentImage = await cargarImagen(prenda.imagen);
-        const hombrosCentro = puntoMedio(leftShoulder, rightShoulder);
-        const caderasCentro = puntoMedio(leftHip, rightHip);
-        const anchoHombros = Math.max(distancia(leftShoulder, rightShoulder), width * 0.18);
-        const anchoCadera = Math.max(distancia(leftHip, rightHip), width * 0.15);
-        const alturaTorso = Math.max(distancia(hombrosCentro, caderasCentro), height * 0.2);
-        const alpha = tipoCapa === "completa" ? 0.68 : 0.7;
-
-        if (tipoCapa === "superior") {
-          const ajusteTorso = [
-            { x: leftShoulder.x - anchoHombros * 0.18, y: leftShoulder.y - alturaTorso * 0.15 },
-            { x: rightShoulder.x + anchoHombros * 0.18, y: rightShoulder.y - alturaTorso * 0.15 },
-            { x: leftHip.x - anchoCadera * 0.2, y: leftHip.y + alturaTorso * 0.2 },
-            { x: rightHip.x + anchoCadera * 0.2, y: rightHip.y + alturaTorso * 0.2 }
-          ];
-          warpRectangulo(context, garmentImage, ajusteTorso, alpha);
-        }
-
-        if (tipoCapa === "inferior") {
-          const anchoRodillas = Math.max(distancia(leftKnee, rightKnee), anchoCadera * 0.75);
-          const ajustePiernas = [
-            { x: leftHip.x - anchoCadera * 0.25, y: leftHip.y - alturaTorso * 0.08 },
-            { x: rightHip.x + anchoCadera * 0.25, y: rightHip.y - alturaTorso * 0.08 },
-            { x: leftAnkle.x - anchoRodillas * 0.22, y: leftAnkle.y + 6 },
-            { x: rightAnkle.x + anchoRodillas * 0.22, y: rightAnkle.y + 6 }
-          ];
-          warpRectangulo(context, garmentImage, ajustePiernas, alpha);
-        }
-
-        if (tipoCapa === "completa") {
-          const ajusteCompleto = [
-            { x: leftShoulder.x - anchoHombros * 0.22, y: leftShoulder.y - alturaTorso * 0.14 },
-            { x: rightShoulder.x + anchoHombros * 0.22, y: rightShoulder.y - alturaTorso * 0.14 },
-            { x: leftAnkle.x - anchoCadera * 0.32, y: leftAnkle.y + 8 },
-            { x: rightAnkle.x + anchoCadera * 0.32, y: rightAnkle.y + 8 }
-          ];
-          warpRectangulo(context, garmentImage, ajusteCompleto, 0.66);
-        }
+    if (tipo === "superior") {
+      return {
+        ...base,
+        top: `${112 + index * 6}px`,
+        width: "52%",
+        zIndex: 5 + index
       };
+    }
 
-      const fullBody = seleccionPrendas.find((p) => p.grupo === "👗 Prendas completas");
-      if (fullBody) {
-        await drawPrenda(fullBody, "completa");
-      } else {
-        const upper = seleccionPrendas.filter((p) => ["👕 Parte superior", "🧥 Ropa exterior"].includes(p.grupo));
-        const lower = seleccionPrendas.filter((p) => p.grupo === "👖 Parte inferior");
-        for (const prenda of upper) await drawPrenda(prenda, "superior");
-        for (const prenda of lower) await drawPrenda(prenda, "inferior");
-      }
-
-      const conPoseReal = Boolean(resultadosPose?.landmarks?.[0]);
-      setEstadoIA(
-        conPoseReal
-          ? "Probador IA activo: pose detectada (hombros, torso, brazos/piernas) y prenda deformada con warp."
-          : "Probador IA en respaldo proporcional: no se detectó pose completa en la foto."
-      );
+    return {
+      ...base,
+      top: `${270 + index * 6}px`,
+      width: "47%",
+      zIndex: 4
     };
-
-    dibujar().catch(() => {
-      setEstadoIA("No se pudo renderizar el probador. Revisa el formato de las imágenes.");
-    });
-  }, [fotoCompleta, seleccionPrendas]);
+  };
 
   return (
-    <div className="ia-result">
-      <small>{estadoIA}</small>
-      <canvas ref={canvasRef} className="ia-canvas" />
+    <div>
+      <div className="clima-row" style={{ marginBottom: 16 }}>
+        {CONTEXTURAS.map((opcion) => {
+          const activa = opcion.id === contextura;
+          return (
+            <button
+              key={opcion.id}
+              className="btn"
+              onClick={() => onCambiarContextura(opcion.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                border: activa ? "2px solid #facc15" : "2px solid transparent",
+                background: activa ? "rgba(250, 204, 21, 0.14)" : undefined
+              }}
+            >
+              <img src={opcion.avatar} alt={`Avatar ${opcion.nombre}`} style={{ width: 38, height: 64, objectFit: "contain" }} />
+              <span style={{ textAlign: "left" }}>
+                <strong>{opcion.nombre}</strong>
+                <br />
+                <small>{opcion.detalle}</small>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <small className="helper-text">Usa imágenes PNG sin fondo para una superposición más realista de las prendas.</small>
+
+      <div
+        style={{
+          marginTop: 14,
+          width: 320,
+          maxWidth: "100%",
+          height: 560,
+          borderRadius: 16,
+          border: "1px solid rgba(148,163,184,.35)",
+          background: "linear-gradient(180deg, rgba(148,163,184,.12), rgba(148,163,184,.03))",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        <img
+          src={configContextura.avatar}
+          alt={`Avatar base ${configContextura.nombre}`}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1 }}
+        />
+
+        {prendaCompleta ? (
+          <img src={prendaCompleta.imagen} alt={prendaCompleta.nombre} style={estiloCapa("completa")} />
+        ) : (
+          <>
+            {capaSuperior.map((prenda, idx) => (
+              <img key={`${prenda.id}-sup`} src={prenda.imagen} alt={prenda.nombre} style={estiloCapa("superior", idx)} />
+            ))}
+            {capaInferior.map((prenda, idx) => (
+              <img key={`${prenda.id}-inf`} src={prenda.imagen} alt={prenda.nombre} style={estiloCapa("inferior", idx)} />
+            ))}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -367,9 +236,9 @@ function App() {
   const [clima, setClima] = useState("templado");
   const [resumenClima, setResumenClima] = useState(null);
   const [estadoClimaApi, setEstadoClimaApi] = useState({ loading: false, error: "" });
-  const [fotoCompleta, setFotoCompleta] = useState(null);
   const [combinacionManual, setCombinacionManual] = useState({});
   const [lookSugerido, setLookSugerido] = useState(null);
+  const [contextura, setContextura] = useState("normal");
   const grupos = Object.keys(CATEGORIAS);
 
   const prendasFiltradas = useMemo(() => {
@@ -663,18 +532,10 @@ function App() {
 
       {pantalla === "probador" && (
         <section className="panel">
-          <h2>Probador con IA + foto de cuerpo completo</h2>
+          <h2>Probador con avatar</h2>
           <p className="helper-text">
-            La IA detecta postura y adapta la posición/tamaño de las prendas para mostrar cómo se ven directamente sobre la foto.
+            Selecciona una contextura corporal y visualiza tus prendas subidas sobre un avatar base.
           </p>
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFotoCompleta(e.target.files?.[0] ? crearUrlImagen(e.target.files[0]) : null)}
-          />
-
-          {!fotoCompleta && <p className="hint">Tip: para mejores resultados, usa fondo claro y postura de frente.</p>}
 
           <div className="manual-composer">
             <h3>Arma tu combinación ideal</h3>
@@ -708,12 +569,14 @@ function App() {
             <button className="btn btn-yellow" onClick={sugerirLookParaHoy}>
               Sugerir qué ponerme hoy
             </button>
-            <small>La app usa el clima actual seleccionado en la pestaña de recomendaciones: {CLIMA_REGLAS[clima].etiqueta}</small>
+            <small>La app usa el clima actual seleccionado en recomendaciones: {CLIMA_REGLAS[clima].etiqueta}</small>
           </div>
 
-          {fotoCompleta && lookIA.length > 0 && <ProbadorIA fotoCompleta={fotoCompleta} seleccionPrendas={lookIA} />}
-
-          {fotoCompleta && lookIA.length === 0 && <p className="hint">Carga al menos una prenda para activar el probador IA.</p>}
+          {lookIA.length > 0 ? (
+            <ProbadorAvatar seleccionPrendas={lookIA} contextura={contextura} onCambiarContextura={setContextura} />
+          ) : (
+            <p className="hint">Carga al menos una prenda y elige una combinación para activar el probador.</p>
+          )}
         </section>
       )}
     </div>

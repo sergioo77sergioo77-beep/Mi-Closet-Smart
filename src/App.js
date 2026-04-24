@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import "./App.css";
 
 const CATEGORIAS = {
@@ -70,6 +70,7 @@ const CLIMA_REGLAS = {
 const OPEN_WEATHER_CITY = "Curico,CL";
 const OPEN_WEATHER_UNITS = "metric";
 const OPEN_WEATHER_LANG = "es";
+const REMOVEBG_ENDPOINT = "https://api.remove.bg/v1.0/removebg";
 
 const crearUrlImagen = (archivo) => URL.createObjectURL(archivo);
 
@@ -232,6 +233,9 @@ function App() {
   const [tipo, setTipo] = useState(CATEGORIAS[Object.keys(CATEGORIAS)[0]][0]);
   const [imagen, setImagen] = useState(null);
   const [vistaPreviaImagen, setVistaPreviaImagen] = useState(null);
+  const [estadoRemoveBg, setEstadoRemoveBg] = useState({ loading: false, error: "" });
+  const inputCamaraRef = useRef(null);
+  const inputArchivoRef = useRef(null);
 
   const [clima, setClima] = useState("templado");
   const [resumenClima, setResumenClima] = useState(null);
@@ -340,7 +344,7 @@ function App() {
       });
       setClima(climaCalculado);
       setEstadoClimaApi({ loading: false, error: "" });
-    } catch (error) {
+    } catch {
       setEstadoClimaApi({
         loading: false,
         error: "No se pudo consultar OpenWeather. Revisa tu API key y conexión."
@@ -364,6 +368,63 @@ function App() {
     setNombre("");
     setImagen(null);
     setVistaPreviaImagen(null);
+  };
+
+  const procesarImagenConRemoveBg = async (archivoOriginal) => {
+    const apiKey = process.env.REACT_APP_REMOVEBG_API_KEY;
+    if (!apiKey) {
+      setEstadoRemoveBg({
+        loading: false,
+        error: "Falta configurar REACT_APP_REMOVEBG_API_KEY en el archivo .env"
+      });
+      setImagen(null);
+      setVistaPreviaImagen(null);
+      return;
+    }
+
+    try {
+      setEstadoRemoveBg({ loading: true, error: "" });
+      const formData = new FormData();
+      formData.append("image_file", archivoOriginal);
+      formData.append("size", "auto");
+
+      const response = await fetch(REMOVEBG_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": apiKey
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`remove.bg respondió con estado ${response.status}`);
+      }
+
+      const imagenSinFondoBlob = await response.blob();
+      if (!imagenSinFondoBlob || imagenSinFondoBlob.size === 0) {
+        throw new Error("remove.bg devolvió una imagen vacía");
+      }
+
+      const nombreBase = (archivoOriginal.name || "prenda").replace(/\.[^/.]+$/, "");
+      const imagenProcesada = new File([imagenSinFondoBlob], `${nombreBase}-sin-fondo.png`, { type: "image/png" });
+      setImagen(imagenProcesada);
+      setVistaPreviaImagen(URL.createObjectURL(imagenSinFondoBlob));
+      setEstadoRemoveBg({ loading: false, error: "" });
+    } catch {
+      setEstadoRemoveBg({
+        loading: false,
+        error: "No se pudo procesar la imagen en remove.bg. Intenta nuevamente."
+      });
+      setImagen(null);
+      setVistaPreviaImagen(null);
+    }
+  };
+
+  const manejarSeleccionImagen = async (event) => {
+    const archivo = event.target.files?.[0];
+    event.target.value = "";
+    if (!archivo) return;
+    await procesarImagenConRemoveBg(archivo);
   };
 
   const cambiarGrupo = (nuevoGrupo) => {
@@ -429,21 +490,38 @@ function App() {
               ))}
             </select>
 
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="btn" type="button" onClick={() => inputCamaraRef.current?.click()}>
+                Tomar foto
+              </button>
+              <button className="btn" type="button" onClick={() => inputArchivoRef.current?.click()}>
+                Subir archivo
+              </button>
+            </div>
+
             <input
+              ref={inputCamaraRef}
               type="file"
               accept="image/*"
               capture="environment"
-              onChange={(e) => {
-                const archivo = e.target.files?.[0] || null;
-                setImagen(archivo);
-                setVistaPreviaImagen(archivo ? crearUrlImagen(archivo) : null);
-              }}
+              style={{ display: "none" }}
+              onChange={manejarSeleccionImagen}
+            />
+            <input
+              ref={inputArchivoRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={manejarSeleccionImagen}
             />
           </div>
+          <small className="helper-text">Configura tu key en <code>.env</code>: <strong>REACT_APP_REMOVEBG_API_KEY=tu_api_key</strong></small>
+          {estadoRemoveBg.loading && <p className="helper-text">Procesando imagen y quitando fondo...</p>}
+          {estadoRemoveBg.error && <p className="error-text">{estadoRemoveBg.error}</p>}
 
           {vistaPreviaImagen && (
             <div className="preview-container">
-              <p className="helper-text">Vista previa de la prenda:</p>
+              <p className="helper-text">Vista previa (sin fondo):</p>
               <img className="preview-image" src={vistaPreviaImagen} alt="Vista previa de la prenda seleccionada" />
             </div>
           )}

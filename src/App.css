@@ -14,6 +14,7 @@ body {
 .app {
   min-height: 100vh;
   padding: 24px;
+  padding-bottom: 100px;
   background: radial-gradient(circle at top, #eef2ff 0%, #f8fafc 45%, #eef2f7 100%);
   color: #111827;
 }
@@ -279,4 +280,33 @@ select {
   border-radius: 12px;
   border: 1px solid #cbd5e1;
   object-fit: cover;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: white;
+  border-top: 1px solid #ccc;
+  z-index: 1000;
+}
+
+.bottom-nav button {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.bottom-nav button.active {
+  color: #2563eb;
+  font-weight: bold;
 }

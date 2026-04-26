@@ -310,3 +310,29 @@ select {
   color: #2563eb;
   font-weight: bold;
 }
+
+/* Bottom navigation (mobile app style) */
+.bottom-nav {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.08);
+  z-index: 1200;
+}
+
+.bottom-nav button {
+  color: #64748b;
+  gap: 4px;
+  min-width: 64px;
+  padding: 4px 6px;
+  line-height: 1.1;
+}
+
+.bottom-nav button.active,
+.bottom-nav .active {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.app {
+  padding-bottom: calc(70px + 24px);
+}

@@ -223,7 +223,7 @@ function ProbadorAvatar({ seleccionPrendas, contextura, onCambiarContextura }) {
 
 function App() {
   const [prendas, setPrendas] = useState([]);
-  const [pantalla, setPantalla] = useState("galeria");
+  const [pantalla, setPantalla] = useState("home");
   const [darkMode, setDarkMode] = useState(false);
   const [filtroGrupo, setFiltroGrupo] = useState("Todas");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
@@ -445,32 +445,26 @@ function App() {
         </button>
       </header>
 
-      <section className="stats-grid">
-        <article className="stat-card">
-          <span>Total prendas</span>
-          <strong>{prendas.length}</strong>
-        </article>
-        <article className="stat-card">
-          <span>Resultados filtrados</span>
-          <strong>{prendasFiltradas.length}</strong>
-        </article>
-        <article className="stat-card">
-          <span>Looks disponibles</span>
-          <strong>{looksParaFoto.length}</strong>
-        </article>
-      </section>
-
-      <nav className="tabs">
-        <button onClick={() => setPantalla("galeria")} className={pantalla === "galeria" ? "active" : ""}>
-          Galería
-        </button>
-        <button onClick={() => setPantalla("recomendaciones")} className={pantalla === "recomendaciones" ? "active" : ""}>
-          Recomendaciones
-        </button>
-        <button onClick={() => setPantalla("probador")} className={pantalla === "probador" ? "active" : ""}>
-          Probador
-        </button>
-      </nav>
+      {pantalla === "home" && (
+        <section className="panel">
+          <h2>Inicio</h2>
+          <p className="helper-text">Resumen rápido de tu clóset inteligente.</p>
+          <section className="stats-grid">
+            <article className="stat-card">
+              <span>Total prendas</span>
+              <strong>{prendas.length}</strong>
+            </article>
+            <article className="stat-card">
+              <span>Resultados filtrados</span>
+              <strong>{prendasFiltradas.length}</strong>
+            </article>
+            <article className="stat-card">
+              <span>Looks disponibles</span>
+              <strong>{looksParaFoto.length}</strong>
+            </article>
+          </section>
+        </section>
+      )}
 
       {pantalla === "galeria" && (
         <section className="panel">
@@ -657,6 +651,21 @@ function App() {
           )}
         </section>
       )}
+
+      <nav className="bottom-nav">
+        <button onClick={() => setPantalla("home")} className={pantalla === "home" ? "active" : ""}>
+          Inicio
+        </button>
+        <button onClick={() => setPantalla("galeria")} className={pantalla === "galeria" ? "active" : ""}>
+          Galería
+        </button>
+        <button onClick={() => setPantalla("recomendaciones")} className={pantalla === "recomendaciones" ? "active" : ""}>
+          Recomendaciones
+        </button>
+        <button onClick={() => setPantalla("probador")} className={pantalla === "probador" ? "active" : ""}>
+          Probador
+        </button>
+      </nav>
     </div>
   );
 }

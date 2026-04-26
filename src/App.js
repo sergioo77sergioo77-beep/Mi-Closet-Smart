@@ -652,18 +652,18 @@ function App() {
         </section>
       )}
 
-      <nav className="bottom-nav">
+      <nav className="bottom-nav" aria-label="Navegación principal">
         <button onClick={() => setPantalla("home")} className={pantalla === "home" ? "active" : ""}>
-          home
+          Home
         </button>
         <button onClick={() => setPantalla("galeria")} className={pantalla === "galeria" ? "active" : ""}>
-          galeria
+          Galería
         </button>
         <button onClick={() => setPantalla("recomendaciones")} className={pantalla === "recomendaciones" ? "active" : ""}>
-          recomendaciones
+          Recomendaciones
         </button>
         <button onClick={() => setPantalla("probador")} className={pantalla === "probador" ? "active" : ""}>
-          probador
+          Probador
         </button>
       </nav>
     </div>

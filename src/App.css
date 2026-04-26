@@ -302,8 +302,12 @@ select {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  flex: 1;
+  height: 100%;
 }
 
 .bottom-nav button.active {
@@ -322,7 +326,7 @@ select {
 .bottom-nav button {
   color: #64748b;
   gap: 4px;
-  min-width: 64px;
+  min-width: 0;
   padding: 4px 6px;
   line-height: 1.1;
 }

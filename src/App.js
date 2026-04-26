@@ -654,16 +654,16 @@ function App() {
 
       <nav className="bottom-nav">
         <button onClick={() => setPantalla("home")} className={pantalla === "home" ? "active" : ""}>
-          Inicio
+          home
         </button>
         <button onClick={() => setPantalla("galeria")} className={pantalla === "galeria" ? "active" : ""}>
-          Galería
+          galeria
         </button>
         <button onClick={() => setPantalla("recomendaciones")} className={pantalla === "recomendaciones" ? "active" : ""}>
-          Recomendaciones
+          recomendaciones
         </button>
         <button onClick={() => setPantalla("probador")} className={pantalla === "probador" ? "active" : ""}>
-          Probador
+          probador
         </button>
       </nav>
     </div>

@@ -176,8 +176,8 @@ const crearAvatarSvg = (anchoCuerpo, opciones = {}) => {
 const CONTEXTURAS = [
   {
     id: "delgado",
-    nombre: "Persona delgada",
-    detalle: "1.75m / 65kg · realista",
+    nombre: "Modelo humano real · Delgado",
+    detalle: "Referencia anatómica 1.75m / 65kg",
     escala: 0.9,
     avatar: crearAvatarSvg(84, {
       tonoPielClaro: "#ffd9c2",
@@ -193,8 +193,8 @@ const CONTEXTURAS = [
   },
   {
     id: "normal",
-    nombre: "Persona media",
-    detalle: "1.75m / 75kg · realista",
+    nombre: "Modelo humano real · Normal",
+    detalle: "Referencia anatómica 1.75m / 75kg",
     escala: 1,
     avatar: crearAvatarSvg(102, {
       tonoPielClaro: "#f4c8a6",
@@ -210,8 +210,8 @@ const CONTEXTURAS = [
   },
   {
     id: "robusto",
-    nombre: "Persona robusta",
-    detalle: "1.75m / 90kg · realista",
+    nombre: "Modelo humano real · Robusto",
+    detalle: "Referencia anatómica 1.75m / 90kg",
     escala: 1.1,
     avatar: crearAvatarSvg(122, {
       tonoPielClaro: "#d9af8f",
@@ -719,9 +719,9 @@ function App() {
 
       {pantalla === "probador" && (
         <section className="panel">
-          <h2>Probador con avatar</h2>
+          <h2>Probador con modelos humanos reales</h2>
           <p className="helper-text">
-            Selecciona una contextura corporal y visualiza tus prendas subidas sobre un avatar base.
+            Elige entre modelos de contextura delgada, normal o robusta y visualiza tus prendas sobre una base humana realista.
           </p>
 
           <div className="manual-composer">

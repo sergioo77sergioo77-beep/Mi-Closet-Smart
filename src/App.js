@@ -74,7 +74,17 @@ const REMOVEBG_ENDPOINT = "https://api.remove.bg/v1.0/removebg";
 
 const crearUrlImagen = (archivo) => URL.createObjectURL(archivo);
 
-const crearAvatarSvg = (anchoCuerpo) => {
+const crearAvatarSvg = (anchoCuerpo, opciones = {}) => {
+  const {
+    tonoPielClaro = "#ffd9c4",
+    tonoPielOscuro = "#dca786",
+    colorCabello = "#2f3748",
+    colorRemeraClaro = "#d5dbe7",
+    colorRemeraOscuro = "#aab4c5",
+    colorPantalonClaro = "#95a3ba",
+    colorPantalonOscuro = "#707f98",
+    colorLabios = "#b66b60"
+  } = opciones;
   const centroX = 140;
   const mitadCuerpo = anchoCuerpo / 2;
   const anchoCaderas = anchoCuerpo * 0.92;
@@ -89,36 +99,62 @@ const crearAvatarSvg = (anchoCuerpo) => {
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 280 520'>
     <defs>
       <linearGradient id='piel' x1='0' y1='0' x2='0' y2='1'>
-        <stop offset='0%' stop-color='#ffd9c4'/>
-        <stop offset='100%' stop-color='#f2bea4'/>
+        <stop offset='0%' stop-color='${tonoPielClaro}'/>
+        <stop offset='100%' stop-color='${tonoPielOscuro}'/>
       </linearGradient>
+      <radialGradient id='pielLuz' cx='35%' cy='30%' r='65%'>
+        <stop offset='0%' stop-color='#fff4ec' stop-opacity='0.9'/>
+        <stop offset='100%' stop-color='${tonoPielClaro}' stop-opacity='0'/>
+      </radialGradient>
       <linearGradient id='camiseta' x1='0' y1='0' x2='0' y2='1'>
-        <stop offset='0%' stop-color='#cfd7e4'/>
-        <stop offset='100%' stop-color='#aab4c5'/>
+        <stop offset='0%' stop-color='${colorRemeraClaro}'/>
+        <stop offset='100%' stop-color='${colorRemeraOscuro}'/>
       </linearGradient>
       <linearGradient id='pantalon' x1='0' y1='0' x2='0' y2='1'>
-        <stop offset='0%' stop-color='#97a4b8'/>
-        <stop offset='100%' stop-color='#7c8aa1'/>
+        <stop offset='0%' stop-color='${colorPantalonClaro}'/>
+        <stop offset='100%' stop-color='${colorPantalonOscuro}'/>
+      </linearGradient>
+      <linearGradient id='sombraCabeza' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0%' stop-color='#000' stop-opacity='0.05'/>
+        <stop offset='100%' stop-color='#000' stop-opacity='0.22'/>
+      </linearGradient>
+      <linearGradient id='sombraCuerpo' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0%' stop-color='#fff' stop-opacity='0.2'/>
+        <stop offset='100%' stop-color='#000' stop-opacity='0.2'/>
       </linearGradient>
     </defs>
 
     <rect width='280' height='520' fill='transparent'/>
 
-    <path d='M107 43 C118 18, 162 18, 173 43 C171 67, 159 79, 140 80 C121 79, 109 67, 107 43 Z' fill='#2f3748'/>
+    <ellipse cx='140' cy='252' rx='95' ry='222' fill='#0f172a' opacity='0.05'/>
+    <path d='M106 44 C118 13, 163 13, 174 44 C174 62, 167 75, 157 81 C145 87, 131 86, 121 81 C111 76, 105 62, 106 44 Z' fill='${colorCabello}'/>
+    <ellipse cx='107' cy='75' rx='8' ry='10' fill='url(#piel)'/>
+    <ellipse cx='173' cy='75' rx='8' ry='10' fill='url(#piel)'/>
     <ellipse cx='140' cy='74' rx='31' ry='34' fill='url(#piel)'/>
-    <ellipse cx='140' cy='72' rx='29' ry='32' fill='url(#piel)'/>
-    <circle cx='128' cy='71' r='2.1' fill='#2f3748'/>
-    <circle cx='152' cy='71' r='2.1' fill='#2f3748'/>
-    <path d='M129 86 Q140 95 151 86' stroke='#d58a78' stroke-width='2.6' fill='none' stroke-linecap='round'/>
-    <path d='M124 65 Q128 62 132 65' stroke='#875549' stroke-width='2' fill='none' stroke-linecap='round'/>
-    <path d='M148 65 Q152 62 156 65' stroke='#875549' stroke-width='2' fill='none' stroke-linecap='round'/>
+    <ellipse cx='140' cy='74' rx='31' ry='34' fill='url(#pielLuz)'/>
+    <ellipse cx='140' cy='74' rx='31' ry='34' fill='url(#sombraCabeza)'/>
+    <path d='M136 77 Q140 72 144 77' stroke='#9a6a55' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+    <circle cx='128' cy='71' r='2.2' fill='#2c2c32'/>
+    <circle cx='152' cy='71' r='2.2' fill='#2c2c32'/>
+    <circle cx='127.3' cy='70.3' r='0.8' fill='#f8fafc' opacity='0.8'/>
+    <circle cx='151.3' cy='70.3' r='0.8' fill='#f8fafc' opacity='0.8'/>
+    <path d='M128 87 Q140 96 152 87' stroke='${colorLabios}' stroke-width='2.8' fill='none' stroke-linecap='round'/>
+    <path d='M123 64 Q128 60 133 64' stroke='#7a4a41' stroke-width='2' fill='none' stroke-linecap='round'/>
+    <path d='M147 64 Q152 60 157 64' stroke='#7a4a41' stroke-width='2' fill='none' stroke-linecap='round'/>
+    <ellipse cx='140' cy='87' rx='4.2' ry='2.4' fill='#e2ab92' opacity='0.6'/>
     <rect x='132' y='101' width='16' height='20' rx='8' fill='url(#piel)'/>
+    <rect x='132' y='101' width='16' height='20' rx='8' fill='url(#sombraCabeza)' opacity='0.35'/>
 
     <path d='M${centroX - mitadHombros} 127
       C${centroX - mitadCuerpo} 111, ${centroX + mitadCuerpo} 111, ${centroX + mitadHombros} 127
       L${centroX + mitadCaderas} 288
       C${centroX + mitadCaderas - 8} 308, ${centroX - mitadCaderas + 8} 308, ${centroX - mitadCaderas} 288 Z'
       fill='url(#camiseta)'/>
+    <path d='M${centroX - mitadHombros} 127
+      C${centroX - mitadCuerpo} 111, ${centroX + mitadCuerpo} 111, ${centroX + mitadHombros} 127
+      L${centroX + mitadCaderas} 288
+      C${centroX + mitadCaderas - 8} 308, ${centroX - mitadCaderas + 8} 308, ${centroX - mitadCaderas} 288 Z'
+      fill='url(#sombraCuerpo)'/>
 
     <rect x='${centroX - mitadHombros - separacionBrazo - anchoBrazo}' y='136' width='${anchoBrazo}' height='150' rx='${anchoBrazo / 2}' fill='url(#camiseta)'/>
     <rect x='${centroX + mitadHombros + separacionBrazo}' y='136' width='${anchoBrazo}' height='150' rx='${anchoBrazo / 2}' fill='url(#camiseta)'/>
@@ -137,24 +173,51 @@ const crearAvatarSvg = (anchoCuerpo) => {
 const CONTEXTURAS = [
   {
     id: "delgado",
-    nombre: "Delgado",
-    detalle: "1.75m / 65kg",
+    nombre: "Persona delgada",
+    detalle: "1.75m / 65kg · realista",
     escala: 0.9,
-    avatar: crearAvatarSvg(84)
+    avatar: crearAvatarSvg(84, {
+      tonoPielClaro: "#ffd9c2",
+      tonoPielOscuro: "#c89273",
+      colorCabello: "#2b1e19",
+      colorRemeraClaro: "#d9e2ef",
+      colorRemeraOscuro: "#a7b5c7",
+      colorPantalonClaro: "#8fa2bf",
+      colorPantalonOscuro: "#617496",
+      colorLabios: "#b46b63"
+    })
   },
   {
     id: "normal",
-    nombre: "Normal",
-    detalle: "1.75m / 75kg",
+    nombre: "Persona media",
+    detalle: "1.75m / 75kg · realista",
     escala: 1,
-    avatar: crearAvatarSvg(102)
+    avatar: crearAvatarSvg(102, {
+      tonoPielClaro: "#f4c8a6",
+      tonoPielOscuro: "#be8a67",
+      colorCabello: "#1f2937",
+      colorRemeraClaro: "#cfd9e8",
+      colorRemeraOscuro: "#9daac0",
+      colorPantalonClaro: "#8f9eb3",
+      colorPantalonOscuro: "#637185",
+      colorLabios: "#ab6054"
+    })
   },
   {
     id: "robusto",
-    nombre: "Robusto",
-    detalle: "1.75m / 90kg",
+    nombre: "Persona robusta",
+    detalle: "1.75m / 90kg · realista",
     escala: 1.1,
-    avatar: crearAvatarSvg(122)
+    avatar: crearAvatarSvg(122, {
+      tonoPielClaro: "#d9af8f",
+      tonoPielOscuro: "#a26f52",
+      colorCabello: "#14191f",
+      colorRemeraClaro: "#d7deeb",
+      colorRemeraOscuro: "#a2adbe",
+      colorPantalonClaro: "#8799b2",
+      colorPantalonOscuro: "#586882",
+      colorLabios: "#91564d"
+    })
   }
 ];
 

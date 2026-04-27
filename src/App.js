@@ -75,14 +75,60 @@ const REMOVEBG_ENDPOINT = "https://api.remove.bg/v1.0/removebg";
 const crearUrlImagen = (archivo) => URL.createObjectURL(archivo);
 
 const crearAvatarSvg = (anchoCuerpo) => {
+  const centroX = 140;
+  const mitadCuerpo = anchoCuerpo / 2;
+  const anchoCaderas = anchoCuerpo * 0.92;
+  const mitadCaderas = anchoCaderas / 2;
+  const anchoHombros = anchoCuerpo * 1.2;
+  const mitadHombros = anchoHombros / 2;
+  const anchoBrazo = Math.max(24, anchoCuerpo * 0.24);
+  const separacionBrazo = Math.max(12, anchoCuerpo * 0.11);
+  const anchoPierna = Math.max(30, anchoCuerpo * 0.34);
+  const separacionPiernas = Math.max(8, anchoCuerpo * 0.08);
+
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 280 520'>
+    <defs>
+      <linearGradient id='piel' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0%' stop-color='#ffd9c4'/>
+        <stop offset='100%' stop-color='#f2bea4'/>
+      </linearGradient>
+      <linearGradient id='camiseta' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0%' stop-color='#cfd7e4'/>
+        <stop offset='100%' stop-color='#aab4c5'/>
+      </linearGradient>
+      <linearGradient id='pantalon' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0%' stop-color='#97a4b8'/>
+        <stop offset='100%' stop-color='#7c8aa1'/>
+      </linearGradient>
+    </defs>
+
     <rect width='280' height='520' fill='transparent'/>
-    <circle cx='140' cy='70' r='34' fill='#f6cfb8'/>
-    <rect x='${140 - anchoCuerpo / 2}' y='115' width='${anchoCuerpo}' height='170' rx='48' fill='#b7beca'/>
-    <rect x='${140 - anchoCuerpo / 2 - 32}' y='125' width='28' height='140' rx='14' fill='#b7beca'/>
-    <rect x='${140 + anchoCuerpo / 2 + 4}' y='125' width='28' height='140' rx='14' fill='#b7beca'/>
-    <rect x='${140 - anchoCuerpo / 2 + 12}' y='282' width='34' height='190' rx='16' fill='#98a2b3'/>
-    <rect x='${140 + anchoCuerpo / 2 - 46}' y='282' width='34' height='190' rx='16' fill='#98a2b3'/>
+
+    <path d='M107 43 C118 18, 162 18, 173 43 C171 67, 159 79, 140 80 C121 79, 109 67, 107 43 Z' fill='#2f3748'/>
+    <ellipse cx='140' cy='74' rx='31' ry='34' fill='url(#piel)'/>
+    <ellipse cx='140' cy='72' rx='29' ry='32' fill='url(#piel)'/>
+    <circle cx='128' cy='71' r='2.1' fill='#2f3748'/>
+    <circle cx='152' cy='71' r='2.1' fill='#2f3748'/>
+    <path d='M129 86 Q140 95 151 86' stroke='#d58a78' stroke-width='2.6' fill='none' stroke-linecap='round'/>
+    <path d='M124 65 Q128 62 132 65' stroke='#875549' stroke-width='2' fill='none' stroke-linecap='round'/>
+    <path d='M148 65 Q152 62 156 65' stroke='#875549' stroke-width='2' fill='none' stroke-linecap='round'/>
+    <rect x='132' y='101' width='16' height='20' rx='8' fill='url(#piel)'/>
+
+    <path d='M${centroX - mitadHombros} 127
+      C${centroX - mitadCuerpo} 111, ${centroX + mitadCuerpo} 111, ${centroX + mitadHombros} 127
+      L${centroX + mitadCaderas} 288
+      C${centroX + mitadCaderas - 8} 308, ${centroX - mitadCaderas + 8} 308, ${centroX - mitadCaderas} 288 Z'
+      fill='url(#camiseta)'/>
+
+    <rect x='${centroX - mitadHombros - separacionBrazo - anchoBrazo}' y='136' width='${anchoBrazo}' height='150' rx='${anchoBrazo / 2}' fill='url(#camiseta)'/>
+    <rect x='${centroX + mitadHombros + separacionBrazo}' y='136' width='${anchoBrazo}' height='150' rx='${anchoBrazo / 2}' fill='url(#camiseta)'/>
+    <rect x='${centroX - mitadHombros - separacionBrazo - anchoBrazo + 3}' y='257' width='${anchoBrazo - 6}' height='44' rx='${(anchoBrazo - 6) / 2}' fill='url(#piel)'/>
+    <rect x='${centroX + mitadHombros + separacionBrazo + 3}' y='257' width='${anchoBrazo - 6}' height='44' rx='${(anchoBrazo - 6) / 2}' fill='url(#piel)'/>
+
+    <rect x='${centroX - separacionPiernas / 2 - anchoPierna}' y='286' width='${anchoPierna}' height='188' rx='18' fill='url(#pantalon)'/>
+    <rect x='${centroX + separacionPiernas / 2}' y='286' width='${anchoPierna}' height='188' rx='18' fill='url(#pantalon)'/>
+    <ellipse cx='${centroX - separacionPiernas / 2 - anchoPierna / 2}' cy='476' rx='${anchoPierna * 0.56}' ry='11' fill='#5a6577'/>
+    <ellipse cx='${centroX + separacionPiernas / 2 + anchoPierna / 2}' cy='476' rx='${anchoPierna * 0.56}' ry='11' fill='#5a6577'/>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;

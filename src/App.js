@@ -550,13 +550,13 @@ function App() {
   return (
     <div className={darkMode ? "app dark" : "app"}>
       <header className="header">
-        <div>
-          <span className="eyebrow">Asistente de estilo personal</span>
-          <h1>Mi Closet Smart 👗</h1>
-          <p>Gestiona prendas, recibe recomendaciones diarias y prueba looks de forma visual.</p>
+        <div className="brand-block">
+          <span className="eyebrow">MI CLOSET SMART</span>
+          <h1>Tu ropa, tu estilo, tu mejor versión</h1>
+          <p>Organiza · Recomienda · Transforma</p>
         </div>
         <button className="btn btn-yellow" onClick={() => setDarkMode((prev) => !prev)}>
-          Modo {darkMode ? "Claro ☀️" : "Oscuro 🌙"}
+          {darkMode ? "☀️ Claro" : "🌙 Oscuro"}
         </button>
       </header>
 
@@ -567,14 +567,17 @@ function App() {
           <section className="stats-grid">
             <article className="stat-card">
               <span>Total prendas</span>
+              <i>👕</i>
               <strong>{prendas.length}</strong>
             </article>
             <article className="stat-card">
               <span>Resultados filtrados</span>
+              <i>🔎</i>
               <strong>{prendasFiltradas.length}</strong>
             </article>
             <article className="stat-card">
               <span>Looks disponibles</span>
+              <i>⭐</i>
               <strong>{looksParaFoto.length}</strong>
             </article>
           </section>
@@ -583,7 +586,7 @@ function App() {
 
       {pantalla === "galeria" && (
         <section className="panel">
-          <h2>Agregar prenda</h2>
+          <h2>Tu Closet Digital</h2>
           <div className="form-grid">
             <input type="text" placeholder="Nombre o detalle" value={nombre} onChange={(e) => setNombre(e.target.value)} />
 
@@ -754,7 +757,7 @@ function App() {
 
           <div className="sugerencia-row">
             <button className="btn btn-yellow" onClick={sugerirLookParaHoy}>
-              Sugerir qué ponerme hoy
+              Generar combinación
             </button>
             <small>La app usa el clima actual seleccionado en recomendaciones: {CLIMA_REGLAS[clima].etiqueta}</small>
           </div>
@@ -769,15 +772,19 @@ function App() {
 
       <nav className="bottom-nav" aria-label="Navegación principal">
         <button onClick={() => setPantalla("home")} className={pantalla === "home" ? "active" : ""}>
-          Home
+          <span>🏠</span>
+          Hogar
         </button>
         <button onClick={() => setPantalla("galeria")} className={pantalla === "galeria" ? "active" : ""}>
-          Galería
+          <span>🧺</span>
+          Closet
         </button>
         <button onClick={() => setPantalla("recomendaciones")} className={pantalla === "recomendaciones" ? "active" : ""}>
+          <span>⭐</span>
           Recomendaciones
         </button>
         <button onClick={() => setPantalla("probador")} className={pantalla === "probador" ? "active" : ""}>
+          <span>🪞</span>
           Probador
         </button>
       </nav>

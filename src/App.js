@@ -726,19 +726,27 @@ function App() {
 
           <div className="gallery">
             {prendasFiltradas.map((p) => (
-              <article key={p.id} className="card">
-                <img src={p.imagen} alt={p.nombre} onClick={() => setImagenAmpliada(p.imagen)} />
+              <article key={p.id} className="card closet-card">
+                <div className="card-image-wrapper" onClick={() => setImagenAmpliada(p.imagen)}>
+                  <img src={p.imagen} alt={p.nombre} />
+                  <div className="card-image-overlay">
+                    <button className="btn" type="button" onClick={(e) => {
+                      e.stopPropagation();
+                      iniciarEdicionPrenda(p);
+                    }}>
+                      Editar
+                    </button>
+                    <button className="btn btn-danger" type="button" onClick={(e) => {
+                      e.stopPropagation();
+                      eliminarPrenda(p.id);
+                    }}>
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
                 <strong>{p.nombre}</strong>
                 <span>{p.grupo}</span>
                 <small>{p.tipo}</small>
-                <div className="card-actions">
-                  <button className="btn" type="button" onClick={() => iniciarEdicionPrenda(p)}>
-                    Editar
-                  </button>
-                  <button className="btn btn-danger" type="button" onClick={() => eliminarPrenda(p.id)}>
-                    Eliminar
-                  </button>
-                </div>
               </article>
             ))}
             {prendasFiltradas.length === 0 && <p className="empty">Aún no hay prendas en este filtro.</p>}

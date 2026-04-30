@@ -359,6 +359,7 @@ function App() {
   const [lookSugerido, setLookSugerido] = useState(null);
   const [contextura, setContextura] = useState("normal");
   const [imagenAmpliada, setImagenAmpliada] = useState(null);
+  const [prendaEditandoId, setPrendaEditandoId] = useState(null);
   const grupos = Object.keys(CATEGORIAS);
 
   const prendasFiltradas = useMemo(() => {
@@ -468,6 +469,15 @@ function App() {
     }
   };
 
+  const limpiarFormularioPrenda = () => {
+    setNombre("");
+    setGrupo(Object.keys(CATEGORIAS)[0]);
+    setTipo(CATEGORIAS[Object.keys(CATEGORIAS)[0]][0]);
+    setImagen(null);
+    setVistaPreviaImagen(null);
+    setPrendaEditandoId(null);
+  };
+
   const agregarPrenda = () => {
     if (!nombre || !imagen) return;
 
@@ -481,9 +491,43 @@ function App() {
     };
 
     setPrendas((actual) => [nuevaPrenda, ...actual]);
-    setNombre("");
-    setImagen(null);
-    setVistaPreviaImagen(null);
+    limpiarFormularioPrenda();
+  };
+
+  const iniciarEdicionPrenda = (prenda) => {
+    setNombre(prenda.nombre);
+    setGrupo(prenda.grupo);
+    setTipo(prenda.tipo);
+    setImagen(prenda.imagen);
+    setVistaPreviaImagen(prenda.imagen);
+    setPrendaEditandoId(prenda.id);
+  };
+
+  const guardarEdicionPrenda = () => {
+    if (!prendaEditandoId || !nombre || !tipo) return;
+
+    setPrendas((actual) =>
+      actual.map((prenda) =>
+        prenda.id === prendaEditandoId
+          ? {
+              ...prenda,
+              nombre,
+              grupo,
+              tipo,
+              imagen: typeof imagen === "string" ? imagen : prenda.imagen
+            }
+          : prenda
+      )
+    );
+
+    limpiarFormularioPrenda();
+  };
+
+  const eliminarPrenda = (prendaId) => {
+    setPrendas((actual) => actual.filter((prenda) => prenda.id !== prendaId));
+    if (prendaEditandoId === prendaId) {
+      limpiarFormularioPrenda();
+    }
   };
 
   const procesarImagenConRemoveBg = async (archivoOriginal) => {
@@ -639,9 +683,22 @@ function App() {
             </div>
           )}
 
-          <button className="btn btn-yellow" onClick={agregarPrenda}>
-            Guardar prenda
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {prendaEditandoId ? (
+              <>
+                <button className="btn btn-yellow" onClick={guardarEdicionPrenda}>
+                  Guardar cambios
+                </button>
+                <button className="btn" onClick={limpiarFormularioPrenda}>
+                  Cancelar edición
+                </button>
+              </>
+            ) : (
+              <button className="btn btn-yellow" onClick={agregarPrenda}>
+                Guardar prenda
+              </button>
+            )}
+          </div>
 
           <div className="filtros">
             <h3>Filtros</h3>
@@ -674,6 +731,14 @@ function App() {
                 <strong>{p.nombre}</strong>
                 <span>{p.grupo}</span>
                 <small>{p.tipo}</small>
+                <div className="card-actions">
+                  <button className="btn" type="button" onClick={() => iniciarEdicionPrenda(p)}>
+                    Editar
+                  </button>
+                  <button className="btn btn-danger" type="button" onClick={() => eliminarPrenda(p.id)}>
+                    Eliminar
+                  </button>
+                </div>
               </article>
             ))}
             {prendasFiltradas.length === 0 && <p className="empty">Aún no hay prendas en este filtro.</p>}

@@ -300,3 +300,20 @@ select {
   border-radius: 50%;
   cursor: pointer;
 }
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.card-actions .btn {
+  flex: 1;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+}

@@ -195,6 +195,53 @@ select {
 .compact img {
   height: 110px;
 }
+.closet-card .card-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 124px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.closet-card .card-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+}
+
+.closet-card .card-image-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.closet-card .card-image-wrapper:hover .card-image-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.closet-card .card-image-overlay .btn {
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.closet-card .card-image-overlay .btn-danger {
+  background: rgba(220, 38, 38, 0.8);
+  color: #fff;
+}
 
 .helper-text,
 .sugerencia-row small,

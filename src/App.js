@@ -360,6 +360,9 @@ function App() {
   const [contextura, setContextura] = useState("normal");
   const [imagenAmpliada, setImagenAmpliada] = useState(null);
   const [prendaEditandoId, setPrendaEditandoId] = useState(null);
+  const [tarjetaAccionesActiva, setTarjetaAccionesActiva] = useState(null);
+
+  const esDispositivoTactil = typeof window !== "undefined" && window.matchMedia?.("(hover: none)").matches;
   const grupos = Object.keys(CATEGORIAS);
 
   const prendasFiltradas = useMemo(() => {
@@ -495,6 +498,7 @@ function App() {
   };
 
   const iniciarEdicionPrenda = (prenda) => {
+    setTarjetaAccionesActiva(null);
     setNombre(prenda.nombre);
     setGrupo(prenda.grupo);
     setTipo(prenda.tipo);
@@ -524,10 +528,14 @@ function App() {
   };
 
   const eliminarPrenda = (prendaId) => {
+    const confirmar = window.confirm("¿Seguro que quieres eliminar esta prenda?");
+    if (!confirmar) return;
+
     setPrendas((actual) => actual.filter((prenda) => prenda.id !== prendaId));
     if (prendaEditandoId === prendaId) {
       limpiarFormularioPrenda();
     }
+    setTarjetaAccionesActiva((actual) => (actual === prendaId ? null : actual));
   };
 
   const procesarImagenConRemoveBg = async (archivoOriginal) => {
@@ -727,20 +735,30 @@ function App() {
           <div className="gallery">
             {prendasFiltradas.map((p) => (
               <article key={p.id} className="card closet-card">
-                <div className="card-image-wrapper" onClick={() => setImagenAmpliada(p.imagen)}>
+                <div
+                  className="card-image-wrapper"
+                  onClick={() => {
+                    if (esDispositivoTactil && tarjetaAccionesActiva !== p.id) {
+                      setTarjetaAccionesActiva(p.id);
+                      return;
+                    }
+                    setImagenAmpliada(p.imagen);
+                  }}
+                  onMouseLeave={() => setTarjetaAccionesActiva((actual) => (actual === p.id ? null : actual))}
+                >
                   <img src={p.imagen} alt={p.nombre} />
-                  <div className="card-image-overlay">
+                  <div className={`card-image-overlay ${tarjetaAccionesActiva === p.id ? "visible" : ""}`}>
                     <button className="btn" type="button" onClick={(e) => {
                       e.stopPropagation();
                       iniciarEdicionPrenda(p);
                     }}>
-                      Editar
+                      ✏️ Editar
                     </button>
                     <button className="btn btn-danger" type="button" onClick={(e) => {
                       e.stopPropagation();
                       eliminarPrenda(p.id);
                     }}>
-                      Eliminar
+                      🗑 Eliminar
                     </button>
                   </div>
                 </div>

@@ -195,6 +195,68 @@ select {
 .compact img {
   height: 110px;
 }
+.closet-card .card-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 124px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+
+.closet-card .card-image-wrapper {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.closet-card .card-image-wrapper:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+}
+.closet-card .card-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+}
+
+.closet-card .card-image-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px;
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0));
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.closet-card .card-image-wrapper:hover .card-image-overlay,
+.closet-card .card-image-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.closet-card .card-image-overlay .btn {
+  background: rgba(248, 250, 252, 0.92);
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.closet-card .card-image-overlay .btn-danger {
+  background: rgba(220, 38, 38, 0.8);
+  color: #fff;
+}
 
 .helper-text,
 .sugerencia-row small,
@@ -299,4 +361,21 @@ select {
   height: 42px;
   border-radius: 50%;
   cursor: pointer;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.card-actions .btn {
+  flex: 1;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
 }

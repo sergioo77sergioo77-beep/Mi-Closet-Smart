@@ -176,8 +176,8 @@ const crearAvatarSvg = (anchoCuerpo, opciones = {}) => {
 const CONTEXTURAS = [
   {
     id: "delgado",
-    nombre: "Modelo humano real · Delgado",
-    detalle: "Referencia anatómica 1.75m / 65kg",
+    nombre: "Persona delgada",
+    detalle: "Contextura delgada",
     escala: 0.9,
     avatar: crearAvatarSvg(84, {
       tonoPielClaro: "#ffd9c2",
@@ -193,8 +193,8 @@ const CONTEXTURAS = [
   },
   {
     id: "normal",
-    nombre: "Modelo humano real · Normal",
-    detalle: "Referencia anatómica 1.75m / 75kg",
+    nombre: "Persona normal",
+    detalle: "Contextura normal",
     escala: 1,
     avatar: crearAvatarSvg(102, {
       tonoPielClaro: "#f4c8a6",
@@ -210,8 +210,8 @@ const CONTEXTURAS = [
   },
   {
     id: "robusto",
-    nombre: "Modelo humano real · Robusto",
-    detalle: "Referencia anatómica 1.75m / 90kg",
+    nombre: "Persona robusto",
+    detalle: "Contextura robusto",
     escala: 1.1,
     avatar: crearAvatarSvg(122, {
       tonoPielClaro: "#d9af8f",
@@ -360,6 +360,10 @@ function App() {
   const [lookSugerido, setLookSugerido] = useState(null);
   const [contextura, setContextura] = useState("normal");
   const [imagenAmpliada, setImagenAmpliada] = useState(null);
+  const [prendaEditandoId, setPrendaEditandoId] = useState(null);
+  const [tarjetaAccionesActiva, setTarjetaAccionesActiva] = useState(null);
+
+  const esDispositivoTactil = typeof window !== "undefined" && window.matchMedia?.("(hover: none)").matches;
   const grupos = Object.keys(CATEGORIAS);
 
   const prendasFiltradas = useMemo(() => {
@@ -469,6 +473,15 @@ function App() {
     }
   };
 
+  const limpiarFormularioPrenda = () => {
+    setNombre("");
+    setGrupo(Object.keys(CATEGORIAS)[0]);
+    setTipo(CATEGORIAS[Object.keys(CATEGORIAS)[0]][0]);
+    setImagen(null);
+    setVistaPreviaImagen(null);
+    setPrendaEditandoId(null);
+  };
+
   const agregarPrenda = () => {
     if (!nombre || !imagen) return;
 
@@ -482,9 +495,48 @@ function App() {
     };
 
     setPrendas((actual) => [nuevaPrenda, ...actual]);
-    setNombre("");
-    setImagen(null);
-    setVistaPreviaImagen(null);
+    limpiarFormularioPrenda();
+  };
+
+  const iniciarEdicionPrenda = (prenda) => {
+    setTarjetaAccionesActiva(null);
+    setNombre(prenda.nombre);
+    setGrupo(prenda.grupo);
+    setTipo(prenda.tipo);
+    setImagen(prenda.imagen);
+    setVistaPreviaImagen(prenda.imagen);
+    setPrendaEditandoId(prenda.id);
+  };
+
+  const guardarEdicionPrenda = () => {
+    if (!prendaEditandoId || !nombre || !tipo) return;
+
+    setPrendas((actual) =>
+      actual.map((prenda) =>
+        prenda.id === prendaEditandoId
+          ? {
+              ...prenda,
+              nombre,
+              grupo,
+              tipo,
+              imagen: typeof imagen === "string" ? imagen : prenda.imagen
+            }
+          : prenda
+      )
+    );
+
+    limpiarFormularioPrenda();
+  };
+
+  const eliminarPrenda = (prendaId) => {
+    const confirmar = window.confirm("¿Seguro que quieres eliminar esta prenda?");
+    if (!confirmar) return;
+
+    setPrendas((actual) => actual.filter((prenda) => prenda.id !== prendaId));
+    if (prendaEditandoId === prendaId) {
+      limpiarFormularioPrenda();
+    }
+    setTarjetaAccionesActiva((actual) => (actual === prendaId ? null : actual));
   };
 
  const procesarImagenConRemoveBg = async (archivoOriginal) => {
@@ -641,9 +693,22 @@ const manejarSeleccionImagen = async (event) => {
             </div>
           )}
 
-          <button className="btn btn-yellow" onClick={agregarPrenda}>
-            Guardar prenda
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {prendaEditandoId ? (
+              <>
+                <button className="btn btn-yellow" onClick={guardarEdicionPrenda}>
+                  Guardar cambios
+                </button>
+                <button className="btn" onClick={limpiarFormularioPrenda}>
+                  Cancelar edición
+                </button>
+              </>
+            ) : (
+              <button className="btn btn-yellow" onClick={agregarPrenda}>
+                Guardar prenda
+              </button>
+            )}
+          </div>
 
           <div className="filtros">
             <h3>Filtros</h3>
@@ -671,8 +736,34 @@ const manejarSeleccionImagen = async (event) => {
 
           <div className="gallery">
             {prendasFiltradas.map((p) => (
-              <article key={p.id} className="card">
-                <img src={p.imagen} alt={p.nombre} onClick={() => setImagenAmpliada(p.imagen)} />
+              <article key={p.id} className="card closet-card">
+                <div
+                  className="card-image-wrapper"
+                  onClick={() => {
+                    if (esDispositivoTactil) {
+                      setTarjetaAccionesActiva((actual) => (actual === p.id ? null : p.id));
+                      return;
+                    }
+                    setImagenAmpliada(p.imagen);
+                  }}
+                  onMouseLeave={() => setTarjetaAccionesActiva((actual) => (actual === p.id ? null : actual))}
+                >
+                  <img src={p.imagen} alt={p.nombre} />
+                  <div className={`card-image-overlay ${tarjetaAccionesActiva === p.id ? "visible" : ""}`}>
+                    <button className="btn" type="button" onClick={(e) => {
+                      e.stopPropagation();
+                      iniciarEdicionPrenda(p);
+                    }}>
+                      ✏️ Editar
+                    </button>
+                    <button className="btn btn-danger" type="button" onClick={(e) => {
+                      e.stopPropagation();
+                      eliminarPrenda(p.id);
+                    }}>
+                      🗑 Eliminar
+                    </button>
+                  </div>
+                </div>
                 <strong>{p.nombre}</strong>
                 <span>{p.grupo}</span>
                 <small>{p.tipo}</small>
@@ -727,7 +818,7 @@ const manejarSeleccionImagen = async (event) => {
         <section className="panel">
           <h2>Probador con modelos humanos reales</h2>
           <p className="helper-text">
-            Elige entre modelos de contextura delgada, normal o robusta y visualiza tus prendas sobre una base humana realista.
+            Elige entre avatar de persona delgada, normal o robusta y visualiza tus prendas sobre una base humana realista.
           </p>
 
           <div className="manual-composer">

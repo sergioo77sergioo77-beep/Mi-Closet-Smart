@@ -738,8 +738,8 @@ function App() {
                 <div
                   className="card-image-wrapper"
                   onClick={() => {
-                    if (esDispositivoTactil && tarjetaAccionesActiva !== p.id) {
-                      setTarjetaAccionesActiva(p.id);
+                    if (esDispositivoTactil) {
+                      setTarjetaAccionesActiva((actual) => (actual === p.id ? null : p.id));
                       return;
                     }
                     setImagenAmpliada(p.imagen);

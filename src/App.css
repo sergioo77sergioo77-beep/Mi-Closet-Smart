@@ -219,23 +219,29 @@ select {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px;
-  background: rgba(15, 23, 42, 0.35);
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px;
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0));
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transform: translateY(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.closet-card .card-image-wrapper:hover .card-image-overlay {
+.closet-card .card-image-wrapper:hover .card-image-overlay,
+.closet-card .card-image-overlay.visible {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 
 .closet-card .card-image-overlay .btn {
-  background: rgba(248, 250, 252, 0.85);
+  background: rgba(248, 250, 252, 0.92);
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
 }
 
 .closet-card .card-image-overlay .btn-danger {

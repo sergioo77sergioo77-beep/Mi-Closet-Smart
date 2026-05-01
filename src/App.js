@@ -359,6 +359,7 @@ function App() {
   const [combinacionManual, setCombinacionManual] = useState({});
   const [lookSugerido, setLookSugerido] = useState(null);
   const [contextura, setContextura] = useState("normal");
+  const [imagenAmpliada, setImagenAmpliada] = useState(null);
   const grupos = Object.keys(CATEGORIAS);
 
   const prendasFiltradas = useMemo(() => {
@@ -671,7 +672,7 @@ const manejarSeleccionImagen = async (event) => {
           <div className="gallery">
             {prendasFiltradas.map((p) => (
               <article key={p.id} className="card">
-                <img src={p.imagen} alt={p.nombre} />
+                <img src={p.imagen} alt={p.nombre} onClick={() => setImagenAmpliada(p.imagen)} />
                 <strong>{p.nombre}</strong>
                 <span>{p.grupo}</span>
                 <small>{p.tipo}</small>
@@ -710,7 +711,7 @@ const manejarSeleccionImagen = async (event) => {
           <div className="reco-grid">
             {recomendacionesDia.map((p) => (
               <article key={p.id} className="card compact">
-                <img src={p.imagen} alt={p.nombre} />
+                <img src={p.imagen} alt={p.nombre} onClick={() => setImagenAmpliada(p.imagen)} />
                 <strong>{p.nombre}</strong>
                 <small>{p.tipo}</small>
               </article>
@@ -770,6 +771,21 @@ const manejarSeleccionImagen = async (event) => {
             <p className="hint">Carga al menos una prenda y elige una combinación para activar el probador.</p>
           )}
         </section>
+      )}
+
+
+      {imagenAmpliada && (
+        <div className="imagen-modal-overlay" onClick={() => setImagenAmpliada(null)}>
+          <button className="imagen-modal-cerrar" onClick={() => setImagenAmpliada(null)}>
+            ✕
+          </button>
+          <img
+            className="imagen-modal-contenido"
+            src={imagenAmpliada}
+            alt="Imagen ampliada de la prenda"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
 
       <nav className="bottom-nav" aria-label="Navegación principal">

@@ -424,6 +424,14 @@ function App() {
     setLookSugerido(seleccion);
   };
 
+  const seleccionarPrendaEnProbador = (prenda) => {
+    setCombinacionManual((prev) => ({
+      ...prev,
+      [prenda.grupo]: String(prenda.id)
+    }));
+    setPantalla("probador");
+  };
+
   const clasificarClimaPorAPI = (temperatura, condicion) => {
     const descripcion = (condicion || "").toLowerCase();
     if (descripcion.includes("rain") || descripcion.includes("drizzle") || descripcion.includes("thunderstorm")) {
@@ -847,6 +855,27 @@ const manejarSeleccionImagen = async (event) => {
                 );
               })}
             </div>
+          </div>
+
+          <div className="probador-galeria">
+            <h3>Galería de ropa</h3>
+            <p className="helper-text">Toca una prenda para asignarla automáticamente en su categoría del probador.</p>
+            <div className="probador-galeria-scroll">
+              {prendas.map((prenda) => (
+                <button
+                  key={`probador-galeria-${prenda.id}`}
+                  className={`probador-galeria-item ${
+                    combinacionManual[prenda.grupo] === String(prenda.id) ? "active" : ""
+                  }`}
+                  onClick={() => seleccionarPrendaEnProbador(prenda)}
+                >
+                  <img src={prenda.imagen} alt={prenda.nombre} />
+                  <strong>{prenda.nombre}</strong>
+                  <small>{prenda.grupo}</small>
+                </button>
+              ))}
+            </div>
+            {prendas.length === 0 && <p className="empty">Agrega prendas en Closet para ver tu galería del probador.</p>}
           </div>
 
           <div className="sugerencia-row">

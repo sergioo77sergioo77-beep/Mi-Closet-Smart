@@ -155,6 +155,44 @@ h3 {
   margin-bottom: 12px;
 }
 
+.probador-galeria {
+  margin-bottom: 12px;
+}
+
+.probador-galeria-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.probador-galeria-item {
+  min-width: 140px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: inherit;
+  text-align: left;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.probador-galeria-item img {
+  width: 100%;
+  height: 92px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #e2e8f0;
+}
+
+.probador-galeria-item.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
 input,
 select {
   width: 100%;

@@ -1,0 +1,7 @@
+# Configuración de despliegue en Netlify.
+# Compila la app del clóset (React) y, además, copia la app de gastos
+# (carpeta gastos-app/, estática) dentro del directorio publicado para que
+# quede disponible en https://<sitio>.netlify.app/gastos-app/
+[build]
+  command = "npm run build && cp -r gastos-app build/gastos-app"
+  publish = "build"

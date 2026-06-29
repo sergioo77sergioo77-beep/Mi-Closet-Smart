@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Mis Gastos · Control con boletas</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- OCR en el navegador: gratis, sin claves, sin servidor -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div>
+        <span class="eyebrow">MIS GASTOS</span>
+        <h1>Controla tus gastos 📒</h1>
+        <p>Sube la foto de la boleta o carga el monto a mano.</p>
+      </div>
+    </header>
+
+    <!-- Resumen -->
+    <section class="panel" id="panel-resumen">
+      <div class="resumen-top">
+        <label class="campo-inline">
+          <span>Mes</span>
+          <input type="month" id="filtro-mes" />
+        </label>
+        <button class="btn-link" id="btn-mes-actual" type="button">Mes actual</button>
+      </div>
+
+      <div class="resumen-total">
+        <span>Total del mes</span>
+        <strong id="resumen-monto">$0</strong>
+        <small id="resumen-cantidad">0 gastos</small>
+      </div>
+
+      <div class="resumen-categorias" id="resumen-categorias"></div>
+    </section>
+
+    <!-- Acciones principales -->
+    <section class="acciones">
+      <button class="btn btn-foto" id="btn-foto" type="button">📷 Subir boleta (foto)</button>
+      <button class="btn btn-manual" id="btn-manual" type="button">✍️ Cargar a mano</button>
+    </section>
+
+    <input type="file" id="input-foto" accept="image/*" capture="environment" hidden />
+
+    <!-- Estado del OCR -->
+    <section class="panel ocr-estado" id="ocr-estado" hidden>
+      <div class="ocr-spinner"></div>
+      <div>
+        <strong>Leyendo la boleta…</strong>
+        <small id="ocr-progreso">Preparando lector…</small>
+      </div>
+    </section>
+
+    <!-- Formulario (revisar / manual) -->
+    <section class="panel form-panel" id="form-panel" hidden>
+      <h2 id="form-titulo">Revisar gasto</h2>
+      <p class="helper" id="form-ayuda">Revisa los datos detectados y corrige lo que haga falta.</p>
+
+      <div class="preview-wrap" id="preview-wrap" hidden>
+        <img id="preview-img" alt="Boleta subida" />
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Comercio / Detalle</span>
+          <input type="text" id="campo-comercio" placeholder="Ej: Supermercado, Feria, Farmacia" />
+        </label>
+
+        <label>
+          <span>Monto (CLP)</span>
+          <input type="number" id="campo-monto" inputmode="numeric" placeholder="0" min="0" />
+        </label>
+
+        <label>
+          <span>Categoría</span>
+          <select id="campo-categoria"></select>
+        </label>
+
+        <label>
+          <span>Fecha</span>
+          <input type="date" id="campo-fecha" />
+        </label>
+
+        <label class="campo-full">
+          <span>Nota (opcional)</span>
+          <input type="text" id="campo-nota" placeholder="Ej: verduras de la semana" />
+        </label>
+      </div>
+
+      <div class="form-acciones">
+        <button class="btn btn-guardar" id="btn-guardar" type="button">Guardar gasto</button>
+        <button class="btn btn-cancelar" id="btn-cancelar" type="button">Cancelar</button>
+      </div>
+    </section>
+
+    <!-- Listado -->
+    <section class="panel">
+      <div class="lista-header">
+        <h2>Gastos del mes</h2>
+        <select id="filtro-categoria" class="filtro-cat"></select>
+      </div>
+      <div class="lista" id="lista-gastos"></div>
+      <p class="empty" id="lista-vacia" hidden>Aún no hay gastos en este mes. ¡Sube tu primera boleta!</p>
+    </section>
+
+    <footer class="pie">
+      <button class="btn-link danger" id="btn-borrar-todo" type="button">Borrar todos los datos</button>
+      <small>Tus datos se guardan solo en este dispositivo.</small>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

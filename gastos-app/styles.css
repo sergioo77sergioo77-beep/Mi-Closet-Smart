@@ -194,6 +194,45 @@ body {
 .btn-guardar { background: var(--verde); color: #fff; flex: 1; }
 .btn-cancelar { background: #f1f5f9; color: var(--text); }
 
+/* Gráfico de tendencia */
+.grafico {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 160px;
+  padding-top: 8px;
+}
+.grafico-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.grafico-monto { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.grafico-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  min-height: 0;
+}
+.grafico-bar {
+  width: 100%;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
+  min-height: 4px;
+  transition: filter .15s ease;
+}
+.grafico-col.activo .grafico-bar { background: linear-gradient(180deg, #fde047, #facc15); }
+.grafico-col.activo .grafico-mes { color: var(--text); font-weight: 700; }
+.grafico-mes { font-size: 11px; color: var(--muted); text-transform: capitalize; }
+
 /* Lista */
 .lista-header {
   display: flex;
@@ -201,8 +240,21 @@ body {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 .lista-header h2 { margin: 0; font-size: 18px; }
+.lista-header-acciones { display: flex; align-items: center; gap: 8px; }
+.btn-export {
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-export:active { transform: scale(.97); }
 .filtro-cat {
   border: 1px solid var(--line);
   border-radius: 10px;

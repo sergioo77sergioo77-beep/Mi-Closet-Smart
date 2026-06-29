@@ -155,6 +155,7 @@ function init() {
   });
   filtroMes.addEventListener("change", render);
   filtroCategoria.addEventListener("change", render);
+  $("#btn-export").addEventListener("click", exportarCSV);
   $("#btn-borrar-todo").addEventListener("click", borrarTodo);
 
   render();
@@ -373,7 +374,44 @@ function render() {
   $("#resumen-cantidad").textContent = `${delMes.length} ${delMes.length === 1 ? "gasto" : "gastos"}`;
 
   renderResumenCategorias(delMes, total);
+  renderTendencia(mes);
   renderLista(delMes);
+}
+
+/* Gráfico de barras: total gastado en los últimos 6 meses */
+function renderTendencia(mesSeleccionado) {
+  const panel = $("#panel-tendencia");
+  const cont = $("#grafico-meses");
+
+  if (gastos.length === 0) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+
+  const meses = ultimosMeses(6, mesSeleccionado);
+  const totales = meses.map((m) =>
+    gastos.filter((g) => g.fecha.slice(0, 7) === m).reduce((acc, g) => acc + g.monto, 0)
+  );
+  const maximo = Math.max(...totales, 1);
+
+  cont.innerHTML = "";
+  meses.forEach((m, i) => {
+    const altura = Math.round((totales[i] / maximo) * 100);
+    const col = document.createElement("button");
+    col.type = "button";
+    col.className = "grafico-col" + (m === mesSeleccionado ? " activo" : "");
+    col.innerHTML = `
+      <span class="grafico-monto">${totales[i] > 0 ? PESOS.format(totales[i]) : "—"}</span>
+      <span class="grafico-track"><span class="grafico-bar" style="height:${totales[i] > 0 ? Math.max(altura, 3) : 0}%"></span></span>
+      <span class="grafico-mes">${etiquetaMesCorta(m)}</span>
+    `;
+    col.addEventListener("click", () => {
+      filtroMes.value = m;
+      render();
+    });
+    cont.appendChild(col);
+  });
 }
 
 function renderResumenCategorias(delMes, total) {
@@ -456,6 +494,45 @@ function guardarGastos() {
   }
 }
 
+/* ---------- Exportar CSV (para Excel / Google Sheets) ---------- */
+function exportarCSV() {
+  const mes = filtroMes.value || mesActualISO();
+  const delMes = gastos
+    .filter((g) => g.fecha.slice(0, 7) === mes)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+
+  if (delMes.length === 0) {
+    alert("No hay gastos en este mes para exportar.");
+    return;
+  }
+
+  // Separador ';' y BOM UTF-8: abre correctamente en Excel en español.
+  const escaparCSV = (valor) => {
+    const t = String(valor ?? "");
+    return /[";\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  };
+
+  const filas = [["Fecha", "Comercio", "Categoria", "Monto", "Nota"]];
+  let total = 0;
+  delMes.forEach((g) => {
+    total += g.monto;
+    filas.push([formatearFecha(g.fecha), g.comercio, nombreCategoria(g.categoriaId), g.monto, g.nota || ""]);
+  });
+  filas.push([]);
+  filas.push(["", "", "TOTAL", total, ""]);
+
+  const csv = "﻿" + filas.map((f) => f.map(escaparCSV).join(";")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `gastos-${mes}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 /* ---------- Utilidades ---------- */
 function obtenerCategoria(id) {
   return CATEGORIAS.find((c) => c.id === id) || CATEGORIAS[CATEGORIAS.length - 1];
@@ -482,6 +559,22 @@ function mesActualISO() {
 function formatearFecha(iso) {
   const [a, m, d] = iso.split("-");
   return `${d}/${m}/${a}`;
+}
+/* Lista de los últimos N meses (YYYY-MM) terminando en el mes de referencia */
+function ultimosMeses(n, mesRef) {
+  const [a, m] = (mesRef || mesActualISO()).split("-").map(Number);
+  const base = new Date(a, m - 1, 1);
+  const meses = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+    meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  }
+  return meses;
+}
+const NOMBRES_MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function etiquetaMesCorta(iso) {
+  const [a, m] = iso.split("-").map(Number);
+  return `${NOMBRES_MES[m - 1]} ${String(a).slice(2)}`;
 }
 function capitalizar(texto) {
   return texto

@@ -39,6 +39,13 @@
       <div class="resumen-categorias" id="resumen-categorias"></div>
     </section>
 
+    <!-- Tendencia: gráfico de últimos meses -->
+    <section class="panel" id="panel-tendencia" hidden>
+      <h2>Últimos meses</h2>
+      <p class="helper">Toca una barra para ver el detalle de ese mes.</p>
+      <div class="grafico" id="grafico-meses"></div>
+    </section>
+
     <!-- Acciones principales -->
     <section class="acciones">
       <button class="btn btn-foto" id="btn-foto" type="button">📷 Subir boleta (foto)</button>
@@ -102,7 +109,10 @@
     <section class="panel">
       <div class="lista-header">
         <h2>Gastos del mes</h2>
-        <select id="filtro-categoria" class="filtro-cat"></select>
+        <div class="lista-header-acciones">
+          <select id="filtro-categoria" class="filtro-cat"></select>
+          <button class="btn-export" id="btn-export" type="button" title="Exportar a CSV (Excel)">⬇️ CSV</button>
+        </div>
       </div>
       <div class="lista" id="lista-gastos"></div>
       <p class="empty" id="lista-vacia" hidden>Aún no hay gastos en este mes. ¡Sube tu primera boleta!</p>

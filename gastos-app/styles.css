@@ -146,6 +146,14 @@ body {
 
 /* Formulario */
 .form-panel h2 { margin: 0 0 4px; font-size: 19px; }
+.form-preguntas {
+  background: #fff7e6; border: 1px solid #ffe2a8; border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 14px;
+}
+.form-preguntas strong { font-size: 14px; }
+.form-preguntas ul { margin: 8px 0; padding-left: 20px; font-size: 14px; }
+.form-preguntas li { margin-bottom: 4px; }
+.form-preguntas small { color: var(--muted); }
 .preview-wrap { margin-bottom: 14px; text-align: center; }
 .preview-wrap img {
   max-width: 100%; max-height: 200px;

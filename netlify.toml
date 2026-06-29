@@ -5,3 +5,9 @@
 [build]
   command = "npm run build && cp -r gastos-app build/gastos-app"
   publish = "build"
+
+# Funciones serverless (lectura de boletas con IA). La API key se configura
+# como variable de entorno ANTHROPIC_API_KEY en Netlify (Site settings).
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

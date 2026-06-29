@@ -307,8 +307,11 @@ async function manejarFoto(event) {
   const dataURL = await reducirImagen(archivo);
   borradorAdjunto = { nombre: archivo.name || "boleta.jpg", tipo: "image/jpeg", dataURL };
 
-  // Si el lector OCR no cargó (sin internet o CDN bloqueado), no nos quedamos
-  // pegados: pasamos directo a la carga manual con la foto de referencia.
+  // 1) Lectura inteligente con IA de visión (si está configurada en el servidor).
+  if (await intentarIA(dataURL, "image/jpeg")) return;
+
+  // 2) Si no hay IA, usamos el lector gratuito (OCR). Y si el OCR tampoco cargó
+  // (sin internet o CDN bloqueado), pasamos directo a la carga manual.
   if (typeof Tesseract === "undefined" || !Tesseract.recognize) {
     abrirFormulario({
       titulo: "Cargar boleta",
@@ -367,10 +370,12 @@ async function manejarArchivo(event) {
 
   const esImagen = (archivo.type || "").startsWith("image/");
 
-  // Si es imagen, la reducimos y le pasamos el OCR igual que a una foto.
+  // Si es imagen, la reducimos e intentamos IA; si no, OCR gratuito.
   if (esImagen) {
     const dataURL = await reducirImagen(archivo);
     borradorAdjunto = { nombre: archivo.name || "imagen.jpg", tipo: "image/jpeg", dataURL };
+
+    if (await intentarIA(dataURL, "image/jpeg")) return;
 
     if (typeof Tesseract !== "undefined" && Tesseract.recognize) {
       ocrEstado.hidden = false;
@@ -407,11 +412,53 @@ async function manejarArchivo(event) {
   const dataURL = await leerArchivoComoDataURL(archivo);
   borradorAdjunto = { nombre: archivo.name || "archivo", tipo: archivo.type || "application/octet-stream", dataURL };
   borradorItems = [];
+
+  // Los PDF también puede leerlos la IA de visión.
+  if (archivo.type === "application/pdf" && await intentarIA(dataURL, "application/pdf")) return;
+
   abrirFormulario({
     titulo: "Cargar gasto con archivo",
     ayuda: "El archivo quedó adjunto. Completa el monto y los datos del gasto.",
     comercio: "", monto: "", categoriaId: "otros"
   });
+}
+
+/* ---------- Lectura con IA de visión (backend Netlify) ---------- */
+async function intentarIA(dataURL, mediaType) {
+  ocrEstado.hidden = false;
+  formPanel.hidden = true;
+  ocrProgreso.textContent = "Analizando la boleta con IA…";
+  try {
+    const resp = await fetch("/.netlify/functions/leer-boleta", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ dataURL, mediaType })
+    });
+    if (!resp.ok) throw new Error("ia-" + resp.status);
+    const ia = await resp.json();
+    if (ia.error) throw new Error(ia.error);
+
+    ocrEstado.hidden = true;
+    borradorItems = (ia.items || []).map((it) => ({ nombre: it.nombre || "", precio: it.precio || 0 }));
+    const hayDudas = Array.isArray(ia.preguntas) && ia.preguntas.length > 0;
+    abrirFormulario({
+      titulo: "Revisar boleta",
+      ayuda: hayDudas
+        ? "Leí la boleta con IA, pero tengo algunas dudas. Revísalas abajo 👇"
+        : "Leí la boleta con IA. Revisa que esté todo bien y guarda.",
+      comercio: ia.comercio || "",
+      monto: ia.monto || "",
+      categoriaId: CATEGORIAS.some((c) => c.id === ia.categoriaId) ? ia.categoriaId : "otros",
+      fecha: ia.fecha,
+      preguntas: ia.preguntas
+    });
+    return true;
+  } catch (e) {
+    // Sin IA (no configurada / sin conexión): seguimos con el lector gratuito.
+    console.warn("IA no disponible, uso lector gratuito:", e && e.message);
+    ocrEstado.hidden = true;
+    return false;
+  }
 }
 
 /* ---------- Análisis de la boleta (heurísticas para Chile) ---------- */
@@ -534,14 +581,23 @@ function abrirFormularioManual() {
   });
 }
 
-function abrirFormulario({ titulo, ayuda, comercio, monto, categoriaId }) {
+function abrirFormulario({ titulo, ayuda, comercio, monto, categoriaId, fecha, preguntas }) {
   formTitulo.textContent = titulo;
   $("#form-ayuda").textContent = ayuda;
   campoComercio.value = comercio || "";
   campoMonto.value = monto || "";
   campoCategoria.value = categoriaId || "otros";
-  campoFecha.value = hoyISO();
+  campoFecha.value = /^\d{4}-\d{2}-\d{2}$/.test(fecha || "") ? fecha : hoyISO();
   campoNota.value = "";
+
+  // Dudas de la IA: las mostramos para que el usuario confirme esos datos.
+  const cajaPreguntas = $("#form-preguntas");
+  if (Array.isArray(preguntas) && preguntas.length > 0) {
+    $("#form-preguntas-lista").innerHTML = preguntas.map((p) => `<li>${escapar(p)}</li>`).join("");
+    cajaPreguntas.hidden = false;
+  } else {
+    cajaPreguntas.hidden = true;
+  }
 
   // Vista previa del adjunto: imagen si lo es, o un "chip" con el nombre del archivo.
   const chip = $("#archivo-chip");

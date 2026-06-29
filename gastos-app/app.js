@@ -89,6 +89,26 @@ const CATEGORIAS = [
   }
 ];
 
+/* Color de fondo (pastel) para el ícono de cada categoría */
+const COLORES = {
+  supermercado: "#e9f1ff",
+  feria: "#e6f7ec",
+  almacen: "#fff3e0",
+  farmacia: "#ffe9ef",
+  comida: "#fff0e0",
+  combustible: "#fde9e9",
+  transporte: "#e9f6ff",
+  hogar: "#f0eefb",
+  vestuario: "#fdeefb",
+  servicios: "#fffbe0",
+  mascotas: "#eef6e9",
+  entretencion: "#eee9fb",
+  otros: "#f0f0f5"
+};
+function colorCategoria(id) {
+  return COLORES[id] || COLORES.otros;
+}
+
 const PESOS = new Intl.NumberFormat("es-CL", {
   style: "currency",
   currency: "CLP",
@@ -169,13 +189,28 @@ async function manejarFoto(event) {
 
   borradorImagen = await leerArchivoComoDataURL(archivo);
 
+  // Si el lector OCR no cargó (sin internet o CDN bloqueado), no nos quedamos
+  // pegados: pasamos directo a la carga manual con la foto de referencia.
+  if (typeof Tesseract === "undefined" || !Tesseract.recognize) {
+    abrirFormulario({
+      titulo: "Cargar boleta",
+      ayuda: "No se pudo cargar el lector automático (revisa tu conexión). Completa los datos a mano; la foto queda de referencia.",
+      comercio: "",
+      monto: "",
+      categoriaId: "otros",
+      conImagen: true
+    });
+    return;
+  }
+
   ocrEstado.hidden = false;
   formPanel.hidden = true;
   ocrProgreso.textContent = "Preparando lector…";
 
   let texto = "";
   try {
-    const resultado = await Tesseract.recognize(borradorImagen, "spa", {
+    // Timeout de seguridad: si tarda demasiado, no dejamos la app colgada.
+    const reconocer = Tesseract.recognize(borradorImagen, "spa", {
       logger: (m) => {
         if (m.status === "recognizing text") {
           ocrProgreso.textContent = `Leyendo texto… ${Math.round(m.progress * 100)}%`;
@@ -184,10 +219,12 @@ async function manejarFoto(event) {
         }
       }
     });
-    texto = resultado.data.text || "";
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 60000));
+    const resultado = await Promise.race([reconocer, timeout]);
+    texto = (resultado && resultado.data && resultado.data.text) || "";
   } catch (err) {
     console.error("Error OCR:", err);
-    // Si el OCR falla, igual abrimos el formulario para carga manual
+    // Si el OCR falla o se pasa de tiempo, igual abrimos el formulario manual.
   }
 
   ocrEstado.hidden = true;
@@ -415,9 +452,15 @@ function renderTendencia(mesSeleccionado) {
 }
 
 function renderResumenCategorias(delMes, total) {
+  const card = $("#card-categorias");
   const cont = $("#resumen-categorias");
   cont.innerHTML = "";
-  if (delMes.length === 0) return;
+
+  if (delMes.length === 0) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
 
   const porCategoria = {};
   delMes.forEach((g) => {
@@ -433,8 +476,11 @@ function renderResumenCategorias(delMes, total) {
       row.className = "cat-row";
       row.innerHTML = `
         <div class="cat-top">
-          <strong>${cat.emoji} ${cat.nombre}</strong>
-          <span>${PESOS.format(monto)} · ${pct}%</span>
+          <span class="cat-nombre">
+            <span class="cat-chip" style="background:${colorCategoria(catId)}">${cat.emoji}</span>
+            ${cat.nombre}
+          </span>
+          <span class="cat-valor">${PESOS.format(monto)} · ${pct}%</span>
         </div>
         <div class="cat-bar"><span style="width:${pct}%"></span></div>
       `;
@@ -464,7 +510,7 @@ function renderLista(delMes) {
     const item = document.createElement("div");
     item.className = "gasto-item";
     item.innerHTML = `
-      <div class="gasto-emoji">${cat.emoji}</div>
+      <div class="gasto-emoji" style="background:${colorCategoria(g.categoriaId)}">${cat.emoji}</div>
       <div class="gasto-info">
         <strong>${escapar(g.comercio)}</strong>
         <small>${cat.nombre} · ${formatearFecha(g.fecha)}${g.nota ? " · " + escapar(g.nota) : ""}</small>

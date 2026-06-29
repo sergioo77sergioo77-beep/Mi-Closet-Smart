@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="theme-color" content="#4f46e5" />
   <title>Mis Gastos · Control con boletas</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
@@ -12,59 +12,46 @@
 </head>
 <body>
   <div class="app">
-    <header class="header">
-      <div>
-        <span class="eyebrow">MIS GASTOS</span>
-        <h1>Controla tus gastos 📒</h1>
-        <p>Sube la foto de la boleta o carga el monto a mano.</p>
+
+    <!-- HERO: total del mes -->
+    <section class="hero">
+      <div class="hero-top">
+        <span class="hero-brand">📒 Mis Gastos</span>
+        <div class="hero-mes">
+          <input type="month" id="filtro-mes" aria-label="Mes" />
+          <button class="hero-hoy" id="btn-mes-actual" type="button">Hoy</button>
+        </div>
       </div>
-    </header>
-
-    <!-- Resumen -->
-    <section class="panel" id="panel-resumen">
-      <div class="resumen-top">
-        <label class="campo-inline">
-          <span>Mes</span>
-          <input type="month" id="filtro-mes" />
-        </label>
-        <button class="btn-link" id="btn-mes-actual" type="button">Mes actual</button>
-      </div>
-
-      <div class="resumen-total">
-        <span>Total del mes</span>
-        <strong id="resumen-monto">$0</strong>
-        <small id="resumen-cantidad">0 gastos</small>
-      </div>
-
-      <div class="resumen-categorias" id="resumen-categorias"></div>
-    </section>
-
-    <!-- Tendencia: gráfico de últimos meses -->
-    <section class="panel" id="panel-tendencia" hidden>
-      <h2>Últimos meses</h2>
-      <p class="helper">Toca una barra para ver el detalle de ese mes.</p>
-      <div class="grafico" id="grafico-meses"></div>
+      <span class="hero-label">Total gastado</span>
+      <strong class="hero-total" id="resumen-monto">$0</strong>
+      <span class="hero-sub" id="resumen-cantidad">0 gastos este mes</span>
     </section>
 
     <!-- Acciones principales -->
     <section class="acciones">
-      <button class="btn btn-foto" id="btn-foto" type="button">📷 Subir boleta (foto)</button>
-      <button class="btn btn-manual" id="btn-manual" type="button">✍️ Cargar a mano</button>
+      <button class="accion accion-foto" id="btn-foto" type="button">
+        <span class="accion-emoji">📷</span>
+        <span class="accion-texto"><strong>Subir boleta</strong><small>con foto</small></span>
+      </button>
+      <button class="accion accion-manual" id="btn-manual" type="button">
+        <span class="accion-emoji">✍️</span>
+        <span class="accion-texto"><strong>Cargar a mano</strong><small>sin boleta</small></span>
+      </button>
     </section>
 
     <input type="file" id="input-foto" accept="image/*" capture="environment" hidden />
 
     <!-- Estado del OCR -->
-    <section class="panel ocr-estado" id="ocr-estado" hidden>
+    <section class="card ocr-estado" id="ocr-estado" hidden>
       <div class="ocr-spinner"></div>
-      <div>
+      <div class="ocr-texto">
         <strong>Leyendo la boleta…</strong>
         <small id="ocr-progreso">Preparando lector…</small>
       </div>
     </section>
 
     <!-- Formulario (revisar / manual) -->
-    <section class="panel form-panel" id="form-panel" hidden>
+    <section class="card form-panel" id="form-panel" hidden>
       <h2 id="form-titulo">Revisar gasto</h2>
       <p class="helper" id="form-ayuda">Revisa los datos detectados y corrige lo que haga falta.</p>
 
@@ -73,7 +60,7 @@
       </div>
 
       <div class="form-grid">
-        <label>
+        <label class="campo-full">
           <span>Comercio / Detalle</span>
           <input type="text" id="campo-comercio" placeholder="Ej: Supermercado, Feria, Farmacia" />
         </label>
@@ -84,13 +71,13 @@
         </label>
 
         <label>
-          <span>Categoría</span>
-          <select id="campo-categoria"></select>
-        </label>
-
-        <label>
           <span>Fecha</span>
           <input type="date" id="campo-fecha" />
+        </label>
+
+        <label class="campo-full">
+          <span>Categoría</span>
+          <select id="campo-categoria"></select>
         </label>
 
         <label class="campo-full">
@@ -100,20 +87,31 @@
       </div>
 
       <div class="form-acciones">
-        <button class="btn btn-guardar" id="btn-guardar" type="button">Guardar gasto</button>
-        <button class="btn btn-cancelar" id="btn-cancelar" type="button">Cancelar</button>
+        <button class="btn-principal" id="btn-guardar" type="button">Guardar gasto</button>
+        <button class="btn-secundario" id="btn-cancelar" type="button">Cancelar</button>
       </div>
     </section>
 
+    <!-- Categorías -->
+    <section class="card" id="card-categorias" hidden>
+      <h2 class="card-titulo">Por categoría</h2>
+      <div class="resumen-categorias" id="resumen-categorias"></div>
+    </section>
+
+    <!-- Tendencia: gráfico de últimos meses -->
+    <section class="card" id="panel-tendencia" hidden>
+      <h2 class="card-titulo">Últimos meses</h2>
+      <p class="helper">Toca una barra para ver ese mes.</p>
+      <div class="grafico" id="grafico-meses"></div>
+    </section>
+
     <!-- Listado -->
-    <section class="panel">
+    <section class="card">
       <div class="lista-header">
-        <h2>Gastos del mes</h2>
-        <div class="lista-header-acciones">
-          <select id="filtro-categoria" class="filtro-cat"></select>
-          <button class="btn-export" id="btn-export" type="button" title="Exportar a CSV (Excel)">⬇️ CSV</button>
-        </div>
+        <h2 class="card-titulo">Gastos del mes</h2>
+        <button class="btn-export" id="btn-export" type="button" title="Exportar a CSV (Excel)">⬇️ CSV</button>
       </div>
+      <select id="filtro-categoria" class="filtro-cat"></select>
       <div class="lista" id="lista-gastos"></div>
       <p class="empty" id="lista-vacia" hidden>Aún no hay gastos en este mes. ¡Sube tu primera boleta!</p>
     </section>

@@ -31,15 +31,22 @@
     <section class="acciones">
       <button class="accion accion-foto" id="btn-foto" type="button">
         <span class="accion-emoji">📷</span>
-        <span class="accion-texto"><strong>Subir boleta</strong><small>con foto</small></span>
+        <span class="accion-texto"><strong>Foto / boleta</strong><small>usa la cámara</small></span>
       </button>
+      <button class="accion accion-archivo" id="btn-archivo" type="button">
+        <span class="accion-emoji">📎</span>
+        <span class="accion-texto"><strong>Subir archivo</strong><small>cualquier formato</small></span>
+      </button>
+    </section>
+    <section class="acciones-manual">
       <button class="accion accion-manual" id="btn-manual" type="button">
         <span class="accion-emoji">✍️</span>
-        <span class="accion-texto"><strong>Cargar a mano</strong><small>sin boleta</small></span>
+        <span class="accion-texto"><strong>Cargar a mano</strong><small>sin boleta (feria, etc.)</small></span>
       </button>
     </section>
 
     <input type="file" id="input-foto" accept="image/*" capture="environment" hidden />
+    <input type="file" id="input-archivo" hidden />
 
     <!-- Estado del OCR -->
     <section class="card ocr-estado" id="ocr-estado" hidden>
@@ -56,7 +63,11 @@
       <p class="helper" id="form-ayuda">Revisa los datos detectados y corrige lo que haga falta.</p>
 
       <div class="preview-wrap" id="preview-wrap" hidden>
-        <img id="preview-img" alt="Boleta subida" />
+        <img id="preview-img" alt="Boleta subida" hidden />
+        <div class="archivo-chip" id="archivo-chip" hidden>
+          <span class="archivo-icono">📄</span>
+          <span class="archivo-nombre" id="archivo-nombre">archivo</span>
+        </div>
       </div>
 
       <div class="form-grid">
@@ -105,6 +116,16 @@
       <div class="grafico" id="grafico-meses"></div>
     </section>
 
+    <!-- Calendario del mes -->
+    <section class="card" id="card-calendario" hidden>
+      <div class="lista-header">
+        <h2 class="card-titulo">Calendario</h2>
+        <span class="cal-mes" id="cal-mes-label"></span>
+      </div>
+      <div class="cal-dows" id="cal-dows"></div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </section>
+
     <!-- Listado -->
     <section class="card">
       <div class="lista-header">
@@ -112,6 +133,10 @@
         <button class="btn-export" id="btn-export" type="button" title="Exportar a CSV (Excel)">⬇️ CSV</button>
       </div>
       <select id="filtro-categoria" class="filtro-cat"></select>
+      <div class="dia-filtro" id="dia-filtro" hidden>
+        <span id="dia-filtro-texto"></span>
+        <button class="btn-link" id="dia-filtro-clear" type="button">Ver todo el mes</button>
+      </div>
       <div class="lista" id="lista-gastos"></div>
       <p class="empty" id="lista-vacia" hidden>Aún no hay gastos en este mes. ¡Sube tu primera boleta!</p>
     </section>

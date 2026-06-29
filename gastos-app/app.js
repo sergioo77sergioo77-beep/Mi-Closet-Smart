@@ -117,12 +117,80 @@ const PESOS = new Intl.NumberFormat("es-CL", {
 
 /* ---------- Estado ---------- */
 let gastos = cargarGastos();
-let borradorImagen = null; // dataURL de la boleta actual (no se persiste la imagen para ahorrar espacio)
+// Adjunto en edición: { nombre, tipo, dataURL }. La imagen/archivo se guarda
+// en IndexedDB (no en localStorage) para no llenar el almacenamiento.
+let borradorAdjunto = null;
+let filtroDia = null; // 'YYYY-MM-DD' cuando se filtra por un día del calendario
+
+/* ---------- IndexedDB para adjuntos ---------- */
+const DB_NOMBRE = "mis-gastos-adjuntos";
+const DB_STORE = "adjuntos";
+let _dbPromise = null;
+function abrirDB() {
+  if (_dbPromise) return _dbPromise;
+  _dbPromise = new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) return reject(new Error("sin IndexedDB"));
+    const req = indexedDB.open(DB_NOMBRE, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(DB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return _dbPromise;
+}
+async function guardarAdjunto(id, adjunto) {
+  try {
+    const db = await abrirDB();
+    await new Promise((res, rej) => {
+      const tx = db.transaction(DB_STORE, "readwrite");
+      tx.objectStore(DB_STORE).put(adjunto, id);
+      tx.oncomplete = res;
+      tx.onerror = () => rej(tx.error);
+    });
+  } catch (e) {
+    console.error("No se pudo guardar el adjunto:", e);
+  }
+}
+async function obtenerAdjunto(id) {
+  try {
+    const db = await abrirDB();
+    return await new Promise((res, rej) => {
+      const tx = db.transaction(DB_STORE, "readonly");
+      const r = tx.objectStore(DB_STORE).get(id);
+      r.onsuccess = () => res(r.result || null);
+      r.onerror = () => rej(r.error);
+    });
+  } catch {
+    return null;
+  }
+}
+async function borrarAdjunto(id) {
+  try {
+    const db = await abrirDB();
+    await new Promise((res) => {
+      const tx = db.transaction(DB_STORE, "readwrite");
+      tx.objectStore(DB_STORE).delete(id);
+      tx.oncomplete = res;
+      tx.onerror = res;
+    });
+  } catch {}
+}
+async function borrarTodosAdjuntos() {
+  try {
+    const db = await abrirDB();
+    await new Promise((res) => {
+      const tx = db.transaction(DB_STORE, "readwrite");
+      tx.objectStore(DB_STORE).clear();
+      tx.oncomplete = res;
+      tx.onerror = res;
+    });
+  } catch {}
+}
 
 /* ---------- Referencias DOM ---------- */
 const $ = (sel) => document.querySelector(sel);
 
 const inputFoto = $("#input-foto");
+const inputArchivo = $("#input-archivo");
 const ocrEstado = $("#ocr-estado");
 const ocrProgreso = $("#ocr-progreso");
 const formPanel = $("#form-panel");
@@ -165,17 +233,21 @@ function init() {
 
   // Eventos
   $("#btn-foto").addEventListener("click", () => inputFoto.click());
+  $("#btn-archivo").addEventListener("click", () => inputArchivo.click());
   $("#btn-manual").addEventListener("click", abrirFormularioManual);
   inputFoto.addEventListener("change", manejarFoto);
+  inputArchivo.addEventListener("change", manejarArchivo);
   $("#btn-guardar").addEventListener("click", guardarGasto);
   $("#btn-cancelar").addEventListener("click", cerrarFormulario);
   $("#btn-mes-actual").addEventListener("click", () => {
     filtroMes.value = mesActualISO();
+    filtroDia = null;
     render();
   });
-  filtroMes.addEventListener("change", render);
+  filtroMes.addEventListener("change", () => { filtroDia = null; render(); });
   filtroCategoria.addEventListener("change", render);
   $("#btn-export").addEventListener("click", exportarCSV);
+  $("#dia-filtro-clear").addEventListener("click", () => { filtroDia = null; render(); });
   $("#btn-borrar-todo").addEventListener("click", borrarTodo);
 
   render();
@@ -187,18 +259,19 @@ async function manejarFoto(event) {
   event.target.value = "";
   if (!archivo) return;
 
-  borradorImagen = await leerArchivoComoDataURL(archivo);
+  // Reducimos la imagen para guardarla como adjunto sin ocupar tanto espacio.
+  const dataURL = await reducirImagen(archivo);
+  borradorAdjunto = { nombre: archivo.name || "boleta.jpg", tipo: "image/jpeg", dataURL };
 
   // Si el lector OCR no cargó (sin internet o CDN bloqueado), no nos quedamos
   // pegados: pasamos directo a la carga manual con la foto de referencia.
   if (typeof Tesseract === "undefined" || !Tesseract.recognize) {
     abrirFormulario({
       titulo: "Cargar boleta",
-      ayuda: "No se pudo cargar el lector automático (revisa tu conexión). Completa los datos a mano; la foto queda de referencia.",
+      ayuda: "No se pudo cargar el lector automático (revisa tu conexión). Completa los datos a mano; la foto queda adjunta.",
       comercio: "",
       monto: "",
-      categoriaId: "otros",
-      conImagen: true
+      categoriaId: "otros"
     });
     return;
   }
@@ -210,7 +283,7 @@ async function manejarFoto(event) {
   let texto = "";
   try {
     // Timeout de seguridad: si tarda demasiado, no dejamos la app colgada.
-    const reconocer = Tesseract.recognize(borradorImagen, "spa", {
+    const reconocer = Tesseract.recognize(dataURL, "spa", {
       logger: (m) => {
         if (m.status === "recognizing text") {
           ocrProgreso.textContent = `Leyendo texto… ${Math.round(m.progress * 100)}%`;
@@ -234,11 +307,63 @@ async function manejarFoto(event) {
     titulo: "Revisar boleta",
     ayuda: texto
       ? "Detecté estos datos desde la foto. Revisa y corrige lo que haga falta antes de guardar."
-      : "No pude leer bien la boleta 😕. Completa los datos a mano (la foto igual queda como referencia).",
+      : "No pude leer bien la boleta 😕. Completa los datos a mano (la foto queda adjunta).",
     comercio: datos.comercio,
     monto: datos.monto,
-    categoriaId: datos.categoriaId,
-    conImagen: true
+    categoriaId: datos.categoriaId
+  });
+}
+
+/* ---------- Subir archivo de cualquier formato ---------- */
+async function manejarArchivo(event) {
+  const archivo = event.target.files && event.target.files[0];
+  event.target.value = "";
+  if (!archivo) return;
+
+  const esImagen = (archivo.type || "").startsWith("image/");
+
+  // Si es imagen, la reducimos y le pasamos el OCR igual que a una foto.
+  if (esImagen) {
+    const dataURL = await reducirImagen(archivo);
+    borradorAdjunto = { nombre: archivo.name || "imagen.jpg", tipo: "image/jpeg", dataURL };
+
+    if (typeof Tesseract !== "undefined" && Tesseract.recognize) {
+      ocrEstado.hidden = false;
+      formPanel.hidden = true;
+      ocrProgreso.textContent = "Leyendo imagen…";
+      let texto = "";
+      try {
+        const reconocer = Tesseract.recognize(dataURL, "spa", {
+          logger: (m) => {
+            if (m.status === "recognizing text") ocrProgreso.textContent = `Leyendo texto… ${Math.round(m.progress * 100)}%`;
+          }
+        });
+        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 60000));
+        const r = await Promise.race([reconocer, timeout]);
+        texto = (r && r.data && r.data.text) || "";
+      } catch (e) { console.error("OCR:", e); }
+      ocrEstado.hidden = true;
+      const datos = analizarBoleta(texto);
+      abrirFormulario({
+        titulo: "Revisar archivo",
+        ayuda: texto ? "Detecté estos datos. Revisa y corrige lo necesario." : "Completa los datos a mano (el archivo queda adjunto).",
+        comercio: datos.comercio, monto: datos.monto, categoriaId: datos.categoriaId
+      });
+      return;
+    }
+  }
+
+  // Archivo no-imagen (PDF, etc.): se guarda como adjunto y se completa a mano.
+  if (archivo.size > 8 * 1024 * 1024) {
+    alert("El archivo es muy grande (máx. 8 MB). Elige uno más liviano.");
+    return;
+  }
+  const dataURL = await leerArchivoComoDataURL(archivo);
+  borradorAdjunto = { nombre: archivo.name || "archivo", tipo: archivo.type || "application/octet-stream", dataURL };
+  abrirFormulario({
+    titulo: "Cargar gasto con archivo",
+    ayuda: "El archivo quedó adjunto. Completa el monto y los datos del gasto.",
+    comercio: "", monto: "", categoriaId: "otros"
   });
 }
 
@@ -321,18 +446,17 @@ function detectarCategoria(textoLower) {
 
 /* ---------- Formulario ---------- */
 function abrirFormularioManual() {
-  borradorImagen = null;
+  borradorAdjunto = null;
   abrirFormulario({
     titulo: "Cargar gasto a mano",
     ayuda: "Ideal para la feria u otros gastos sin boleta. Completa los datos.",
     comercio: "",
     monto: "",
-    categoriaId: "otros",
-    conImagen: false
+    categoriaId: "otros"
   });
 }
 
-function abrirFormulario({ titulo, ayuda, comercio, monto, categoriaId, conImagen }) {
+function abrirFormulario({ titulo, ayuda, comercio, monto, categoriaId }) {
   formTitulo.textContent = titulo;
   $("#form-ayuda").textContent = ayuda;
   campoComercio.value = comercio || "";
@@ -341,8 +465,17 @@ function abrirFormulario({ titulo, ayuda, comercio, monto, categoriaId, conImage
   campoFecha.value = hoyISO();
   campoNota.value = "";
 
-  if (conImagen && borradorImagen) {
-    previewImg.src = borradorImagen;
+  // Vista previa del adjunto: imagen si lo es, o un "chip" con el nombre del archivo.
+  const chip = $("#archivo-chip");
+  if (borradorAdjunto && (borradorAdjunto.tipo || "").startsWith("image/")) {
+    previewImg.src = borradorAdjunto.dataURL;
+    previewImg.hidden = false;
+    chip.hidden = true;
+    previewWrap.hidden = false;
+  } else if (borradorAdjunto) {
+    previewImg.hidden = true;
+    $("#archivo-nombre").textContent = borradorAdjunto.nombre;
+    chip.hidden = false;
     previewWrap.hidden = false;
   } else {
     previewWrap.hidden = true;
@@ -355,10 +488,10 @@ function abrirFormulario({ titulo, ayuda, comercio, monto, categoriaId, conImage
 
 function cerrarFormulario() {
   formPanel.hidden = true;
-  borradorImagen = null;
+  borradorAdjunto = null;
 }
 
-function guardarGasto() {
+async function guardarGasto() {
   const monto = parseInt(campoMonto.value, 10);
   if (!monto || monto <= 0) {
     alert("Ingresa un monto válido en pesos.");
@@ -367,26 +500,38 @@ function guardarGasto() {
   }
 
   const comercio = campoComercio.value.trim() || nombreCategoria(campoCategoria.value);
+  const id = Date.now();
+  const adjunto = borradorAdjunto; // capturamos antes de limpiar
 
-  gastos.push({
-    id: Date.now(),
+  const gasto = {
+    id,
     comercio,
     monto,
     categoriaId: campoCategoria.value,
     fecha: campoFecha.value || hoyISO(),
     nota: campoNota.value.trim()
-  });
+  };
+  if (adjunto) {
+    gasto.adjuntoNombre = adjunto.nombre;
+    gasto.adjuntoTipo = adjunto.tipo;
+  }
+  gastos.push(gasto);
+
+  if (adjunto) await guardarAdjunto(id, adjunto);
 
   guardarGastos();
   cerrarFormulario();
   // Mostrar el mes del gasto recién agregado
-  filtroMes.value = (campoFecha.value || hoyISO()).slice(0, 7);
+  filtroMes.value = (gasto.fecha).slice(0, 7);
+  filtroDia = null;
   render();
 }
 
 function eliminarGasto(id) {
   if (!confirm("¿Eliminar este gasto?")) return;
-  gastos = gastos.filter((g) => g.id !== id);
+  const g = gastos.find((x) => x.id === id);
+  if (g && g.adjuntoNombre) borrarAdjunto(id);
+  gastos = gastos.filter((x) => x.id !== id);
   guardarGastos();
   render();
 }
@@ -394,8 +539,35 @@ function eliminarGasto(id) {
 function borrarTodo() {
   if (!confirm("Esto borrará TODOS tus gastos guardados en este dispositivo. ¿Continuar?")) return;
   gastos = [];
+  filtroDia = null;
+  borrarTodosAdjuntos();
   guardarGastos();
   render();
+}
+
+/* Abre/descarga el adjunto guardado de un gasto */
+async function abrirAdjunto(id) {
+  const adjunto = await obtenerAdjunto(id);
+  if (!adjunto) {
+    alert("No se encontró el archivo adjunto.");
+    return;
+  }
+  // dataURL -> Blob para abrir/descargar de forma fiable en móviles
+  const res = await fetch(adjunto.dataURL);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const esImagen = (adjunto.tipo || "").startsWith("image/");
+  if (esImagen) {
+    a.target = "_blank";
+  } else {
+    a.download = adjunto.nombre || "adjunto";
+  }
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 /* ---------- Render ---------- */
@@ -412,7 +584,73 @@ function render() {
 
   renderResumenCategorias(delMes, total);
   renderTendencia(mes);
+  renderCalendario(mes, delMes);
   renderLista(delMes);
+}
+
+/* Calendario del mes: cada día muestra el total gastado; al tocarlo, filtra ese día */
+function renderCalendario(mes, delMes) {
+  const card = $("#card-calendario");
+  if (delMes.length === 0 && !filtroDia) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+
+  const [anio, m] = mes.split("-").map(Number);
+  $("#cal-mes-label").textContent = `${NOMBRES_MES_LARGO[m - 1]} ${anio}`;
+
+  // Encabezado de días (Lunes a Domingo)
+  const dows = $("#cal-dows");
+  if (!dows.dataset.listo) {
+    ["L", "M", "M", "J", "V", "S", "D"].forEach((d) => {
+      const s = document.createElement("span");
+      s.textContent = d;
+      dows.appendChild(s);
+    });
+    dows.dataset.listo = "1";
+  }
+
+  // Total por día
+  const porDia = {};
+  delMes.forEach((g) => {
+    const d = Number(g.fecha.slice(8, 10));
+    porDia[d] = (porDia[d] || 0) + g.monto;
+  });
+
+  const diasEnMes = new Date(anio, m, 0).getDate();
+  // getDay(): 0=domingo..6=sábado. Lo convertimos a 0=lunes..6=domingo.
+  const primerDow = (new Date(anio, m - 1, 1).getDay() + 6) % 7;
+
+  const grid = $("#cal-grid");
+  grid.innerHTML = "";
+
+  for (let i = 0; i < primerDow; i++) {
+    const v = document.createElement("div");
+    v.className = "cal-cell vacio";
+    grid.appendChild(v);
+  }
+
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const iso = `${anio}-${String(m).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+    const monto = porDia[dia] || 0;
+    const cell = document.createElement(monto > 0 ? "button" : "div");
+    cell.className = "cal-cell";
+    if (monto > 0) cell.classList.add("con-gasto");
+    if (iso === hoyISO()) cell.classList.add("hoy");
+    if (iso === filtroDia) cell.classList.add("sel");
+    cell.innerHTML = `<span class="cal-dia">${dia}</span>${
+      monto > 0 ? `<span class="cal-monto">${montoCorto(monto)}</span>` : ""
+    }`;
+    if (monto > 0) {
+      cell.type = "button";
+      cell.addEventListener("click", () => {
+        filtroDia = (filtroDia === iso) ? null : iso;
+        render();
+      });
+    }
+    grid.appendChild(cell);
+  }
 }
 
 /* Gráfico de barras: total gastado en los últimos 6 meses */
@@ -493,14 +731,24 @@ function renderLista(delMes) {
   const vacia = $("#lista-vacia");
   const filtroCat = filtroCategoria.value;
 
-  const visibles = filtroCat === "todas" ? delMes : delMes.filter((g) => g.categoriaId === filtroCat);
+  // Banner del día seleccionado en el calendario
+  const banner = $("#dia-filtro");
+  if (filtroDia) {
+    banner.hidden = false;
+    $("#dia-filtro-texto").textContent = `Mostrando ${formatearFecha(filtroDia)}`;
+  } else {
+    banner.hidden = true;
+  }
+
+  let visibles = filtroCat === "todas" ? delMes : delMes.filter((g) => g.categoriaId === filtroCat);
+  if (filtroDia) visibles = visibles.filter((g) => g.fecha === filtroDia);
 
   lista.innerHTML = "";
   if (visibles.length === 0) {
     vacia.hidden = false;
     vacia.textContent = delMes.length === 0
       ? "Aún no hay gastos en este mes. ¡Sube tu primera boleta!"
-      : "No hay gastos en esta categoría para el mes seleccionado.";
+      : (filtroDia ? "No hay gastos en el día seleccionado." : "No hay gastos en esta categoría para el mes seleccionado.");
     return;
   }
   vacia.hidden = true;
@@ -509,6 +757,7 @@ function renderLista(delMes) {
     const cat = obtenerCategoria(g.categoriaId);
     const item = document.createElement("div");
     item.className = "gasto-item";
+    const tieneAdjunto = !!g.adjuntoNombre;
     item.innerHTML = `
       <div class="gasto-emoji" style="background:${colorCategoria(g.categoriaId)}">${cat.emoji}</div>
       <div class="gasto-info">
@@ -516,9 +765,15 @@ function renderLista(delMes) {
         <small>${cat.nombre} · ${formatearFecha(g.fecha)}${g.nota ? " · " + escapar(g.nota) : ""}</small>
       </div>
       <div class="gasto-monto">${PESOS.format(g.monto)}</div>
-      <button class="gasto-borrar" title="Eliminar" aria-label="Eliminar">🗑️</button>
+      <div class="gasto-acciones">
+        ${tieneAdjunto ? `<button class="gasto-adjunto" title="Ver archivo adjunto" aria-label="Ver adjunto">📎</button>` : ""}
+        <button class="gasto-borrar" title="Eliminar" aria-label="Eliminar">🗑️</button>
+      </div>
     `;
     item.querySelector(".gasto-borrar").addEventListener("click", () => eliminarGasto(g.id));
+    if (tieneAdjunto) {
+      item.querySelector(".gasto-adjunto").addEventListener("click", () => abrirAdjunto(g.id));
+    }
     lista.appendChild(item);
   });
 }
@@ -618,9 +873,51 @@ function ultimosMeses(n, mesRef) {
   return meses;
 }
 const NOMBRES_MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const NOMBRES_MES_LARGO = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 function etiquetaMesCorta(iso) {
   const [a, m] = iso.split("-").map(Number);
   return `${NOMBRES_MES[m - 1]} ${String(a).slice(2)}`;
+}
+/* Monto compacto para celdas del calendario: 12.490 -> 12k, 990 -> 990 */
+function montoCorto(n) {
+  if (n >= 1000) {
+    const miles = n / 1000;
+    return (miles >= 100 ? Math.round(miles) : Math.round(miles * 10) / 10).toString().replace(".", ",") + "k";
+  }
+  return String(n);
+}
+/* Reduce una imagen (ancho máx. 1200px, JPEG) para guardarla como adjunto liviano */
+function reducirImagen(archivo, maxLado = 1200, calidad = 0.7) {
+  return new Promise((resolve) => {
+    const lector = new FileReader();
+    lector.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxLado || height > maxLado) {
+          if (width >= height) {
+            height = Math.round((height * maxLado) / width);
+            width = maxLado;
+          } else {
+            width = Math.round((width * maxLado) / height);
+            height = maxLado;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        try {
+          resolve(canvas.toDataURL("image/jpeg", calidad));
+        } catch {
+          resolve(lector.result); // fallback al original
+        }
+      };
+      img.onerror = () => resolve(lector.result);
+      img.src = lector.result;
+    };
+    lector.readAsDataURL(archivo);
+  });
 }
 function capitalizar(texto) {
   return texto

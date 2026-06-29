@@ -1,0 +1,44 @@
+name: Desplegar app de Gastos en GitHub Pages
+
+# Publica la carpeta gastos-app/ como sitio estático en GitHub Pages.
+# Se ejecuta al hacer push a main, o manualmente desde la pestaña Actions.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "gastos-app/**"
+      - ".github/workflows/deploy-gastos.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Permite un único despliegue concurrente
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir artefacto (carpeta gastos-app)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gastos-app
+
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

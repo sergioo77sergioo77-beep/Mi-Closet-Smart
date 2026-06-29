@@ -7,6 +7,8 @@ App **independiente** para llevar el control de tus gastos. No depende del clós
 - 📷 **Subir boleta por foto** → lee el texto con OCR en el navegador (gratis, sin claves ni servidor) y detecta automáticamente el **comercio**, el **monto total** y la **categoría**.
 - ✍️ **Cargar a mano** → para la feria u otros gastos sin boleta.
 - 📊 **Resumen del mes** → total gastado y desglose por categoría.
+- 📈 **Gráfico de últimos meses** → barras para comparar cuánto gastaste; toca una barra para ver ese mes.
+- ⬇️ **Exportar a CSV** → descarga los gastos del mes para abrirlos en Excel / Google Sheets.
 - 🗂️ Filtra por mes y por categoría.
 - 💾 Tus datos se guardan **solo en tu dispositivo** (localStorage). Sin login.
 
@@ -31,11 +33,20 @@ Luego abre `http://localhost:8080` en el navegador.
 > Se recomienda servirla por `http://` (no abrir el archivo con `file://`)
 > para que la cámara y el OCR funcionen sin problemas.
 
-### En el celular
+### En el celular (GitHub Pages)
 
-Sube esta carpeta a cualquier hosting estático (GitHub Pages, Netlify, Vercel)
-y ábrela desde el navegador del teléfono. Puedes "Agregar a pantalla de inicio"
-para usarla como una app (PWA).
+El repositorio incluye un workflow (`.github/workflows/deploy-gastos.yml`) que
+publica automáticamente la carpeta `gastos-app/` en GitHub Pages.
+
+Para activarlo (una sola vez):
+
+1. En GitHub, ve a **Settings → Pages**.
+2. En **Source**, elige **GitHub Actions**.
+3. Haz merge de esta rama a `main` (o ejecuta el workflow manualmente desde la
+   pestaña **Actions → Desplegar app de Gastos → Run workflow**).
+4. Al terminar, GitHub te dará la URL pública (algo como
+   `https://TU_USUARIO.github.io/Mi-Closet-Smart/`). Ábrela en el celular y usa
+   **"Agregar a pantalla de inicio"** para tenerla como app (PWA).
 
 ## Categorías que detecta
 
@@ -45,6 +56,28 @@ Cuentas/Servicios, Mascotas, Entretención y Otros.
 
 Los comercios y montos se detectan con heurísticas pensadas para boletas
 chilenas (formato de pesos `$12.990`, líneas con "TOTAL", etc.).
+
+## 🤖 Lectura inteligente con IA (opcional)
+
+La app puede leer la boleta **sola** (comercio, monto, fecha, categoría y cada
+producto) usando IA de visión, y solo te pregunta cuando tiene dudas. Para eso
+hay una función serverless en `netlify/functions/leer-boleta.js` que llama a la
+API de Claude. La clave queda **en el servidor (Netlify), nunca en el teléfono**.
+
+Para activarla, configura la API key en Netlify (una sola vez):
+
+1. Crea una API key en la consola de Anthropic: <https://console.anthropic.com> →
+   **API Keys** → **Create Key** (cópiala, empieza con `sk-ant-...`).
+2. En Netlify: **Site settings → Environment variables → Add a variable**.
+   - Key: `ANTHROPIC_API_KEY`
+   - Value: tu clave `sk-ant-...`
+3. (Opcional) `MODELO_IA` para elegir el modelo. Por defecto usa
+   `claude-haiku-4-5` (el más económico para esta tarea).
+4. Vuelve a desplegar el sitio (o haz un push) para que tome la variable.
+
+Costo aproximado: una fracción de centavo de dólar por boleta con el modelo
+económico. Si la variable **no** está configurada, la app sigue funcionando con
+el lector gratuito (OCR) automáticamente, sin romperse.
 
 ## Privacidad
 

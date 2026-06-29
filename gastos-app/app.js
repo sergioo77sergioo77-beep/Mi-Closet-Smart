@@ -109,6 +109,30 @@ function colorCategoria(id) {
   return COLORES[id] || COLORES.otros;
 }
 
+/* Categorías a nivel de PRODUCTO, para catalogar cada ítem de la boleta */
+const PROD_CATEGORIAS = [
+  { id: "lacteos", nombre: "Lácteos", emoji: "🥛", claves: ["leche", "queso", "quesillo", "yogur", "yoghurt", "mantequilla", "crema", "manjar"] },
+  { id: "carnes", nombre: "Carnes y fiambres", emoji: "🥩", claves: ["carne", "pollo", "vacuno", "cerdo", "molida", "jamon", "jamón", "longaniza", "salchicha", "vienesa", "pescado", "merluza", "pavo", "cecina", "mortadela", "costillar"] },
+  { id: "fruver", nombre: "Frutas y verduras", emoji: "🥦", claves: ["manzana", "platano", "plátano", "tomate", "lechuga", "papa", "cebolla", "palta", "zanahoria", "naranja", "limon", "limón", "fruta", "verdura", "choclo", "zapallo", "pepino", "frutilla", "uva", "pera", "ajo", "betarraga"] },
+  { id: "panaderia", nombre: "Panadería", emoji: "🍞", claves: ["pan", "marraqueta", "hallulla", "dobladita", "galleta", "torta", "queque", "tortilla", "completo"] },
+  { id: "bebidas", nombre: "Bebidas", emoji: "🥤", claves: ["bebida", "jugo", "agua", "coca", "cola", "sprite", "fanta", "cerveza", "vino", "gaseosa", "nectar", "néctar", "pap "] },
+  { id: "abarrotes", nombre: "Abarrotes", emoji: "🧺", claves: ["arroz", "fideo", "tallarin", "azucar", "azúcar", " sal", "aceite", "harina", "conserva", "atun", "atún", "salsa", "ketchup", "mayonesa", "cafe", "café", "mermelada", "poroto", "lenteja", "garbanzo", "avena", "cereal", "sopa"] },
+  { id: "aseo", nombre: "Aseo y limpieza", emoji: "🧽", claves: ["detergente", "cloro", "jabon", "jabón", "shampoo", "papel", "confort", "higienico", "higiénico", "toalla", "lavaloza", "desinfectante", "esponja", "pañal", "panal", "servilleta", "cepillo", "pasta dental", "desodorante"] },
+  { id: "snacks", nombre: "Snacks y dulces", emoji: "🍫", claves: ["chocolate", "dulce", "papas fritas", "snack", "helado", "ramitas", "suflitos", "caramelo", "chicle", "cabritas", "super 8"] },
+  { id: "mascotas_p", nombre: "Mascotas", emoji: "🐾", claves: ["alimento perro", "alimento gato", "dog chow", "cat chow", "mascota", "cachupin"] },
+  { id: "otros_prod", nombre: "Otros", emoji: "🛒", claves: [] }
+];
+function obtenerProdCategoria(id) {
+  return PROD_CATEGORIAS.find((c) => c.id === id) || PROD_CATEGORIAS[PROD_CATEGORIAS.length - 1];
+}
+function clasificarProducto(nombre) {
+  const l = " " + nombre.toLowerCase() + " ";
+  for (const c of PROD_CATEGORIAS) {
+    if (c.claves.some((k) => l.includes(k))) return c.id;
+  }
+  return "otros_prod";
+}
+
 const PESOS = new Intl.NumberFormat("es-CL", {
   style: "currency",
   currency: "CLP",
@@ -120,7 +144,9 @@ let gastos = cargarGastos();
 // Adjunto en edición: { nombre, tipo, dataURL }. La imagen/archivo se guarda
 // en IndexedDB (no en localStorage) para no llenar el almacenamiento.
 let borradorAdjunto = null;
+let borradorItems = []; // productos en edición: [{ nombre, precio }]
 let filtroDia = null; // 'YYYY-MM-DD' cuando se filtra por un día del calendario
+let vista = "gastos"; // 'gastos' | 'dashboard'
 
 /* ---------- IndexedDB para adjuntos ---------- */
 const DB_NOMBRE = "mis-gastos-adjuntos";
@@ -249,8 +275,26 @@ function init() {
   $("#btn-export").addEventListener("click", exportarCSV);
   $("#dia-filtro-clear").addEventListener("click", () => { filtroDia = null; render(); });
   $("#btn-borrar-todo").addEventListener("click", borrarTodo);
+  $("#btn-add-item").addEventListener("click", agregarItemVacio);
+
+  // Navegación inferior
+  $("#nav-gastos").addEventListener("click", () => cambiarVista("gastos"));
+  $("#nav-dashboard").addEventListener("click", () => cambiarVista("dashboard"));
+
+  // Modal de productos
+  $("#items-modal-cerrar").addEventListener("click", cerrarModalItems);
+  $("#items-modal").addEventListener("click", (e) => { if (e.target.id === "items-modal") cerrarModalItems(); });
 
   render();
+}
+
+function cambiarVista(v) {
+  vista = v;
+  $("#vista-gastos").hidden = v !== "gastos";
+  $("#vista-dashboard").hidden = v !== "dashboard";
+  $("#nav-gastos").classList.toggle("activo", v === "gastos");
+  $("#nav-dashboard").classList.toggle("activo", v === "dashboard");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 /* ---------- Manejo de la foto + OCR ---------- */
@@ -303,6 +347,7 @@ async function manejarFoto(event) {
   ocrEstado.hidden = true;
 
   const datos = analizarBoleta(texto);
+  borradorItems = datos.items || [];
   abrirFormulario({
     titulo: "Revisar boleta",
     ayuda: texto
@@ -344,6 +389,7 @@ async function manejarArchivo(event) {
       } catch (e) { console.error("OCR:", e); }
       ocrEstado.hidden = true;
       const datos = analizarBoleta(texto);
+      borradorItems = datos.items || [];
       abrirFormulario({
         titulo: "Revisar archivo",
         ayuda: texto ? "Detecté estos datos. Revisa y corrige lo necesario." : "Completa los datos a mano (el archivo queda adjunto).",
@@ -360,6 +406,7 @@ async function manejarArchivo(event) {
   }
   const dataURL = await leerArchivoComoDataURL(archivo);
   borradorAdjunto = { nombre: archivo.name || "archivo", tipo: archivo.type || "application/octet-stream", dataURL };
+  borradorItems = [];
   abrirFormulario({
     titulo: "Cargar gasto con archivo",
     ayuda: "El archivo quedó adjunto. Completa el monto y los datos del gasto.",
@@ -378,8 +425,38 @@ function analizarBoleta(texto) {
   return {
     comercio: detectarComercio(lineas),
     monto: detectarMonto(lineas, texto),
-    categoriaId: detectarCategoria(textoLower)
+    categoriaId: detectarCategoria(textoLower),
+    items: detectarItems(lineas)
   };
+}
+
+/* Detecta los productos de la boleta: líneas con un nombre + un precio al final.
+   Es "mejor esfuerzo": el usuario revisa y corrige la lista antes de guardar. */
+const PALABRAS_NO_ITEM = /(sub\s*total|total|rut|boleta|factura|fecha|hora|vuelto|efectivo|cambio|cliente|direccion|dirección|tel[eé]fono|caja|cajero|gracias|iva|neto|propina|descuento|ahorro|puntos|tarjeta|monto|saldo|n[°º]\s*\d|folio|sii|timbre)/i;
+function detectarItems(lineas) {
+  const items = [];
+  for (const linea of lineas) {
+    if (PALABRAS_NO_ITEM.test(linea)) continue;
+
+    // Precio = último número con pinta de monto en la línea
+    const precios = extraerMontosDeTexto(linea);
+    if (precios.length === 0) continue;
+    const precio = precios[precios.length - 1];
+    if (precio < 100) continue;
+
+    // Nombre = texto sin números/símbolos; debe tener letras suficientes
+    let nombre = linea
+      .replace(/\$?\s?\d{1,3}(?:\.\d{3})+|\d+/g, " ")
+      .replace(/[^a-záéíóúñ0-9 ]/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const letras = (nombre.match(/[a-záéíóúñ]/gi) || []).length;
+    if (letras < 3 || nombre.length < 3) continue;
+
+    items.push({ nombre: capitalizar(nombre).slice(0, 40), precio });
+    if (items.length >= 60) break; // tope de seguridad
+  }
+  return items;
 }
 
 /* Comercio: primera línea "con letras" razonable de la parte superior */
@@ -447,6 +524,7 @@ function detectarCategoria(textoLower) {
 /* ---------- Formulario ---------- */
 function abrirFormularioManual() {
   borradorAdjunto = null;
+  borradorItems = [];
   abrirFormulario({
     titulo: "Cargar gasto a mano",
     ayuda: "Ideal para la feria u otros gastos sin boleta. Completa los datos.",
@@ -481,14 +559,63 @@ function abrirFormulario({ titulo, ayuda, comercio, monto, categoriaId }) {
     previewWrap.hidden = true;
   }
 
+  renderItemsForm();
+
   formPanel.hidden = false;
   formPanel.scrollIntoView({ behavior: "smooth", block: "center" });
   if (!comercio) campoComercio.focus();
 }
 
+/* Lista editable de productos dentro del formulario */
+function renderItemsForm() {
+  const cont = $("#items-lista");
+  cont.innerHTML = "";
+
+  if (borradorItems.length === 0) {
+    cont.innerHTML = `<p class="items-vacio">No se detectaron productos. Puedes agregarlos con “+ Agregar”.</p>`;
+  } else {
+    borradorItems.forEach((it, idx) => {
+      const fila = document.createElement("div");
+      fila.className = "item-fila";
+      fila.innerHTML = `
+        <input class="item-nombre" type="text" value="${escaparAttr(it.nombre)}" placeholder="Producto" />
+        <input class="item-precio" type="number" inputmode="numeric" value="${it.precio || ""}" placeholder="0" min="0" />
+        <button class="item-quitar" type="button" title="Quitar">✕</button>
+      `;
+      fila.querySelector(".item-nombre").addEventListener("input", (e) => { borradorItems[idx].nombre = e.target.value; });
+      fila.querySelector(".item-precio").addEventListener("input", (e) => {
+        borradorItems[idx].precio = parseInt(e.target.value, 10) || 0;
+        actualizarItemsTotal();
+      });
+      fila.querySelector(".item-quitar").addEventListener("click", () => {
+        borradorItems.splice(idx, 1);
+        renderItemsForm();
+      });
+      cont.appendChild(fila);
+    });
+  }
+  actualizarItemsTotal();
+}
+
+function actualizarItemsTotal() {
+  const total = borradorItems.reduce((acc, it) => acc + (it.precio || 0), 0);
+  $("#items-total").textContent = borradorItems.length
+    ? `${borradorItems.length} producto(s) · suma ${PESOS.format(total)}`
+    : "";
+}
+
+function agregarItemVacio() {
+  borradorItems.push({ nombre: "", precio: 0 });
+  renderItemsForm();
+  // Enfocar el último nombre agregado
+  const filas = $("#items-lista").querySelectorAll(".item-nombre");
+  if (filas.length) filas[filas.length - 1].focus();
+}
+
 function cerrarFormulario() {
   formPanel.hidden = true;
   borradorAdjunto = null;
+  borradorItems = [];
 }
 
 async function guardarGasto() {
@@ -503,6 +630,15 @@ async function guardarGasto() {
   const id = Date.now();
   const adjunto = borradorAdjunto; // capturamos antes de limpiar
 
+  // Productos: descartamos filas sin nombre y catalogamos cada uno
+  const items = borradorItems
+    .filter((it) => (it.nombre || "").trim())
+    .map((it) => ({
+      nombre: it.nombre.trim(),
+      precio: it.precio || 0,
+      prodCat: clasificarProducto(it.nombre)
+    }));
+
   const gasto = {
     id,
     comercio,
@@ -511,6 +647,7 @@ async function guardarGasto() {
     fecha: campoFecha.value || hoyISO(),
     nota: campoNota.value.trim()
   };
+  if (items.length) gasto.items = items;
   if (adjunto) {
     gasto.adjuntoNombre = adjunto.nombre;
     gasto.adjuntoTipo = adjunto.tipo;
@@ -586,6 +723,136 @@ function render() {
   renderTendencia(mes);
   renderCalendario(mes, delMes);
   renderLista(delMes);
+  renderDashboard(mes, delMes, total);
+}
+
+/* ---------- Dashboard ---------- */
+function renderDashboard(mes, delMes, total) {
+  // KPIs: total, comparación con mes anterior, promedio diario, gasto más alto
+  const mesAnterior = ultimosMeses(2, mes)[0];
+  const totalAnterior = gastos
+    .filter((g) => g.fecha.slice(0, 7) === mesAnterior)
+    .reduce((acc, g) => acc + g.monto, 0);
+
+  let comparativa = "Sin datos del mes anterior";
+  let claseComp = "";
+  if (totalAnterior > 0) {
+    const diff = total - totalAnterior;
+    const pct = Math.round((diff / totalAnterior) * 100);
+    if (diff > 0) { comparativa = `▲ ${pct}% más que el mes pasado`; claseComp = "sube"; }
+    else if (diff < 0) { comparativa = `▼ ${Math.abs(pct)}% menos que el mes pasado`; claseComp = "baja"; }
+    else { comparativa = "Igual que el mes pasado"; }
+  }
+
+  const diasMes = new Date(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0).getDate();
+  const promedio = total > 0 ? Math.round(total / diasMes) : 0;
+  const mayor = delMes.reduce((max, g) => (g.monto > max.monto ? g : max), { monto: 0, comercio: "—" });
+
+  $("#dash-kpis").innerHTML = `
+    <div class="kpi">
+      <div class="kpi-label">Total del mes</div>
+      <div class="kpi-valor">${PESOS.format(total)}</div>
+      <div class="kpi-extra ${claseComp}">${comparativa}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Promedio por día</div>
+      <div class="kpi-valor">${PESOS.format(promedio)}</div>
+      <div class="kpi-extra">${delMes.length} gasto(s) en el mes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Mes anterior</div>
+      <div class="kpi-valor">${PESOS.format(totalAnterior)}</div>
+      <div class="kpi-extra">${NOMBRES_MES_LARGO[Number(mesAnterior.slice(5, 7)) - 1]}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Gasto más alto</div>
+      <div class="kpi-valor">${PESOS.format(mayor.monto)}</div>
+      <div class="kpi-extra">${escapar(mayor.comercio)}</div>
+    </div>
+  `;
+
+  renderRankingComercios(delMes);
+  renderRankingProductos(delMes);
+}
+
+function renderRankingComercios(delMes) {
+  const cont = $("#comercios-ranking");
+  const vacia = $("#comercios-vacia");
+  cont.innerHTML = "";
+  if (delMes.length === 0) { vacia.hidden = false; return; }
+  vacia.hidden = true;
+
+  const porComercio = {};
+  delMes.forEach((g) => { porComercio[g.comercio] = (porComercio[g.comercio] || 0) + g.monto; });
+  const orden = Object.entries(porComercio).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maximo = orden[0][1];
+
+  orden.forEach(([comercio, monto]) => {
+    const pct = Math.round((monto / maximo) * 100);
+    const row = document.createElement("div");
+    row.className = "rank-row";
+    row.innerHTML = `
+      <div class="rank-top"><strong>${escapar(comercio)}</strong><span class="rank-valor">${PESOS.format(monto)}</span></div>
+      <div class="rank-bar"><span style="width:${pct}%"></span></div>
+    `;
+    cont.appendChild(row);
+  });
+}
+
+function renderRankingProductos(delMes) {
+  const cont = $("#productos-ranking");
+  const vacia = $("#productos-vacia");
+  cont.innerHTML = "";
+
+  const porProd = {};
+  delMes.forEach((g) => {
+    (g.items || []).forEach((it) => {
+      porProd[it.prodCat] = (porProd[it.prodCat] || 0) + (it.precio || 0);
+    });
+  });
+
+  const entradas = Object.entries(porProd).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  if (entradas.length === 0) { vacia.hidden = false; return; }
+  vacia.hidden = true;
+
+  const total = entradas.reduce((acc, [, v]) => acc + v, 0);
+  entradas.forEach(([catId, monto]) => {
+    const cat = obtenerProdCategoria(catId);
+    const pct = total > 0 ? Math.round((monto / total) * 100) : 0;
+    const row = document.createElement("div");
+    row.className = "cat-row";
+    row.innerHTML = `
+      <div class="cat-top">
+        <span class="cat-nombre"><span class="cat-chip" style="background:#f0eefb">${cat.emoji}</span>${cat.nombre}</span>
+        <span class="cat-valor">${PESOS.format(monto)} · ${pct}%</span>
+      </div>
+      <div class="cat-bar"><span style="width:${pct}%"></span></div>
+    `;
+    cont.appendChild(row);
+  });
+}
+
+/* ---------- Modal de productos de un gasto ---------- */
+function abrirModalItems(id) {
+  const g = gastos.find((x) => x.id === id);
+  if (!g || !g.items || g.items.length === 0) return;
+  $("#items-modal-titulo").textContent = `${g.comercio} · ${g.items.length} producto(s)`;
+  const body = $("#items-modal-body");
+  body.innerHTML = "";
+  g.items.forEach((it) => {
+    const cat = obtenerProdCategoria(it.prodCat);
+    const row = document.createElement("div");
+    row.className = "modal-item";
+    row.innerHTML = `
+      <span class="mi-nombre">${cat.emoji} ${escapar(it.nombre)}</span>
+      <span class="mi-precio">${it.precio ? PESOS.format(it.precio) : "—"}</span>
+    `;
+    body.appendChild(row);
+  });
+  $("#items-modal").hidden = false;
+}
+function cerrarModalItems() {
+  $("#items-modal").hidden = true;
 }
 
 /* Calendario del mes: cada día muestra el total gastado; al tocarlo, filtra ese día */
@@ -690,15 +957,15 @@ function renderTendencia(mesSeleccionado) {
 }
 
 function renderResumenCategorias(delMes, total) {
-  const card = $("#card-categorias");
   const cont = $("#resumen-categorias");
+  const vacia = $("#categorias-vacia");
   cont.innerHTML = "";
 
   if (delMes.length === 0) {
-    card.hidden = true;
+    if (vacia) vacia.hidden = false;
     return;
   }
-  card.hidden = false;
+  if (vacia) vacia.hidden = true;
 
   const porCategoria = {};
   delMes.forEach((g) => {
@@ -758,11 +1025,13 @@ function renderLista(delMes) {
     const item = document.createElement("div");
     item.className = "gasto-item";
     const tieneAdjunto = !!g.adjuntoNombre;
+    const nItems = (g.items || []).length;
     item.innerHTML = `
       <div class="gasto-emoji" style="background:${colorCategoria(g.categoriaId)}">${cat.emoji}</div>
       <div class="gasto-info">
         <strong>${escapar(g.comercio)}</strong>
         <small>${cat.nombre} · ${formatearFecha(g.fecha)}${g.nota ? " · " + escapar(g.nota) : ""}</small>
+        ${nItems ? `<span class="gasto-items-badge">🛒 ${nItems} producto(s)</span>` : ""}
       </div>
       <div class="gasto-monto">${PESOS.format(g.monto)}</div>
       <div class="gasto-acciones">
@@ -773,6 +1042,9 @@ function renderLista(delMes) {
     item.querySelector(".gasto-borrar").addEventListener("click", () => eliminarGasto(g.id));
     if (tieneAdjunto) {
       item.querySelector(".gasto-adjunto").addEventListener("click", () => abrirAdjunto(g.id));
+    }
+    if (nItems) {
+      item.querySelector(".gasto-items-badge").addEventListener("click", () => abrirModalItems(g.id));
     }
     lista.appendChild(item);
   });
@@ -940,6 +1212,9 @@ function escapar(texto) {
   const div = document.createElement("div");
   div.textContent = texto;
   return div.innerHTML;
+}
+function escaparAttr(texto) {
+  return String(texto == null ? "" : texto).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 document.addEventListener("DOMContentLoaded", init);

@@ -27,124 +27,188 @@
       <span class="hero-sub" id="resumen-cantidad">0 gastos este mes</span>
     </section>
 
-    <!-- Acciones principales -->
-    <section class="acciones">
-      <button class="accion accion-foto" id="btn-foto" type="button">
-        <span class="accion-emoji">📷</span>
-        <span class="accion-texto"><strong>Foto / boleta</strong><small>usa la cámara</small></span>
-      </button>
-      <button class="accion accion-archivo" id="btn-archivo" type="button">
-        <span class="accion-emoji">📎</span>
-        <span class="accion-texto"><strong>Subir archivo</strong><small>cualquier formato</small></span>
-      </button>
-    </section>
-    <section class="acciones-manual">
-      <button class="accion accion-manual" id="btn-manual" type="button">
-        <span class="accion-emoji">✍️</span>
-        <span class="accion-texto"><strong>Cargar a mano</strong><small>sin boleta (feria, etc.)</small></span>
-      </button>
-    </section>
+    <!-- ============ VISTA: GASTOS ============ -->
+    <div id="vista-gastos">
 
-    <input type="file" id="input-foto" accept="image/*" capture="environment" hidden />
-    <input type="file" id="input-archivo" hidden />
+      <!-- Acciones principales -->
+      <section class="acciones">
+        <button class="accion accion-foto" id="btn-foto" type="button">
+          <span class="accion-emoji">📷</span>
+          <span class="accion-texto"><strong>Foto / boleta</strong><small>usa la cámara</small></span>
+        </button>
+        <button class="accion accion-archivo" id="btn-archivo" type="button">
+          <span class="accion-emoji">📎</span>
+          <span class="accion-texto"><strong>Subir archivo</strong><small>cualquier formato</small></span>
+        </button>
+      </section>
+      <section class="acciones-manual">
+        <button class="accion accion-manual" id="btn-manual" type="button">
+          <span class="accion-emoji">✍️</span>
+          <span class="accion-texto"><strong>Cargar a mano</strong><small>sin boleta (feria, etc.)</small></span>
+        </button>
+      </section>
 
-    <!-- Estado del OCR -->
-    <section class="card ocr-estado" id="ocr-estado" hidden>
-      <div class="ocr-spinner"></div>
-      <div class="ocr-texto">
-        <strong>Leyendo la boleta…</strong>
-        <small id="ocr-progreso">Preparando lector…</small>
-      </div>
-    </section>
+      <input type="file" id="input-foto" accept="image/*" capture="environment" hidden />
+      <input type="file" id="input-archivo" hidden />
 
-    <!-- Formulario (revisar / manual) -->
-    <section class="card form-panel" id="form-panel" hidden>
-      <h2 id="form-titulo">Revisar gasto</h2>
-      <p class="helper" id="form-ayuda">Revisa los datos detectados y corrige lo que haga falta.</p>
-
-      <div class="preview-wrap" id="preview-wrap" hidden>
-        <img id="preview-img" alt="Boleta subida" hidden />
-        <div class="archivo-chip" id="archivo-chip" hidden>
-          <span class="archivo-icono">📄</span>
-          <span class="archivo-nombre" id="archivo-nombre">archivo</span>
+      <!-- Estado del OCR -->
+      <section class="card ocr-estado" id="ocr-estado" hidden>
+        <div class="ocr-spinner"></div>
+        <div class="ocr-texto">
+          <strong>Leyendo la boleta…</strong>
+          <small id="ocr-progreso">Preparando lector…</small>
         </div>
+      </section>
+
+      <!-- Formulario (revisar / manual) -->
+      <section class="card form-panel" id="form-panel" hidden>
+        <h2 id="form-titulo">Revisar gasto</h2>
+        <p class="helper" id="form-ayuda">Revisa los datos detectados y corrige lo que haga falta.</p>
+
+        <div class="preview-wrap" id="preview-wrap" hidden>
+          <img id="preview-img" alt="Boleta subida" hidden />
+          <div class="archivo-chip" id="archivo-chip" hidden>
+            <span class="archivo-icono">📄</span>
+            <span class="archivo-nombre" id="archivo-nombre">archivo</span>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label class="campo-full">
+            <span>Comercio / Detalle</span>
+            <input type="text" id="campo-comercio" placeholder="Ej: Supermercado, Feria, Farmacia" />
+          </label>
+
+          <label>
+            <span>Monto total (CLP)</span>
+            <input type="number" id="campo-monto" inputmode="numeric" placeholder="0" min="0" />
+          </label>
+
+          <label>
+            <span>Fecha</span>
+            <input type="date" id="campo-fecha" />
+          </label>
+
+          <label class="campo-full">
+            <span>Categoría</span>
+            <select id="campo-categoria"></select>
+          </label>
+
+          <label class="campo-full">
+            <span>Nota (opcional)</span>
+            <input type="text" id="campo-nota" placeholder="Ej: verduras de la semana" />
+          </label>
+        </div>
+
+        <!-- Productos detectados (catálogo) -->
+        <div class="items-bloque">
+          <div class="items-bloque-top">
+            <strong>🛒 Productos de la boleta</strong>
+            <button class="btn-link" id="btn-add-item" type="button">+ Agregar</button>
+          </div>
+          <p class="helper" id="items-ayuda">Lo que la app leyó de la boleta. Edita, borra o agrega lo que falte.</p>
+          <div class="items-lista" id="items-lista"></div>
+          <div class="items-total" id="items-total"></div>
+        </div>
+
+        <div class="form-acciones">
+          <button class="btn-principal" id="btn-guardar" type="button">Guardar gasto</button>
+          <button class="btn-secundario" id="btn-cancelar" type="button">Cancelar</button>
+        </div>
+      </section>
+
+      <!-- Calendario del mes -->
+      <section class="card" id="card-calendario" hidden>
+        <div class="lista-header">
+          <h2 class="card-titulo">Calendario</h2>
+          <span class="cal-mes" id="cal-mes-label"></span>
+        </div>
+        <div class="cal-dows" id="cal-dows"></div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </section>
+
+      <!-- Listado -->
+      <section class="card">
+        <div class="lista-header">
+          <h2 class="card-titulo">Gastos del mes</h2>
+          <button class="btn-export" id="btn-export" type="button" title="Exportar a CSV (Excel)">⬇️ CSV</button>
+        </div>
+        <select id="filtro-categoria" class="filtro-cat"></select>
+        <div class="dia-filtro" id="dia-filtro" hidden>
+          <span id="dia-filtro-texto"></span>
+          <button class="btn-link" id="dia-filtro-clear" type="button">Ver todo el mes</button>
+        </div>
+        <div class="lista" id="lista-gastos"></div>
+        <p class="empty" id="lista-vacia" hidden>Aún no hay gastos en este mes. ¡Sube tu primera boleta!</p>
+      </section>
+
+      <footer class="pie">
+        <button class="btn-link danger" id="btn-borrar-todo" type="button">Borrar todos los datos</button>
+        <small>Tus datos se guardan solo en este dispositivo.</small>
+      </footer>
+    </div>
+
+    <!-- ============ VISTA: DASHBOARD ============ -->
+    <div id="vista-dashboard" hidden>
+
+      <!-- Comparativa con el mes anterior -->
+      <section class="card" id="dash-comparativa">
+        <h2 class="card-titulo">Resumen del mes</h2>
+        <div class="dash-kpis" id="dash-kpis"></div>
+      </section>
+
+      <!-- En qué gastas más (categorías) -->
+      <section class="card" id="card-categorias">
+        <h2 class="card-titulo">¿En qué gastas más?</h2>
+        <div class="resumen-categorias" id="resumen-categorias"></div>
+        <p class="empty" id="categorias-vacia" hidden>Aún no hay gastos este mes.</p>
+      </section>
+
+      <!-- Top tipos de producto (del catálogo) -->
+      <section class="card" id="dash-productos">
+        <h2 class="card-titulo">Tipos de producto</h2>
+        <p class="helper">Según los productos leídos de tus boletas.</p>
+        <div class="resumen-categorias" id="productos-ranking"></div>
+        <p class="empty" id="productos-vacia" hidden>Sube boletas para ver el detalle de productos.</p>
+      </section>
+
+      <!-- Top comercios -->
+      <section class="card" id="dash-comercios">
+        <h2 class="card-titulo">Comercios con más gasto</h2>
+        <div class="ranking" id="comercios-ranking"></div>
+        <p class="empty" id="comercios-vacia" hidden>Aún no hay gastos este mes.</p>
+      </section>
+
+      <!-- Tendencia: gráfico de últimos meses -->
+      <section class="card" id="panel-tendencia" hidden>
+        <h2 class="card-titulo">Últimos meses</h2>
+        <p class="helper">Toca una barra para ver ese mes.</p>
+        <div class="grafico" id="grafico-meses"></div>
+      </section>
+    </div>
+
+    <div class="nav-espacio"></div>
+  </div>
+
+  <!-- Navegación inferior -->
+  <nav class="bottom-nav">
+    <button id="nav-gastos" class="nav-btn activo" type="button">
+      <span>🧾</span><small>Gastos</small>
+    </button>
+    <button id="nav-dashboard" class="nav-btn" type="button">
+      <span>📊</span><small>Dashboard</small>
+    </button>
+  </nav>
+
+  <!-- Modal: detalle de productos de un gasto -->
+  <div class="modal-overlay" id="items-modal" hidden>
+    <div class="modal">
+      <div class="modal-top">
+        <strong id="items-modal-titulo">Productos</strong>
+        <button class="modal-cerrar" id="items-modal-cerrar" type="button">✕</button>
       </div>
-
-      <div class="form-grid">
-        <label class="campo-full">
-          <span>Comercio / Detalle</span>
-          <input type="text" id="campo-comercio" placeholder="Ej: Supermercado, Feria, Farmacia" />
-        </label>
-
-        <label>
-          <span>Monto (CLP)</span>
-          <input type="number" id="campo-monto" inputmode="numeric" placeholder="0" min="0" />
-        </label>
-
-        <label>
-          <span>Fecha</span>
-          <input type="date" id="campo-fecha" />
-        </label>
-
-        <label class="campo-full">
-          <span>Categoría</span>
-          <select id="campo-categoria"></select>
-        </label>
-
-        <label class="campo-full">
-          <span>Nota (opcional)</span>
-          <input type="text" id="campo-nota" placeholder="Ej: verduras de la semana" />
-        </label>
-      </div>
-
-      <div class="form-acciones">
-        <button class="btn-principal" id="btn-guardar" type="button">Guardar gasto</button>
-        <button class="btn-secundario" id="btn-cancelar" type="button">Cancelar</button>
-      </div>
-    </section>
-
-    <!-- Categorías -->
-    <section class="card" id="card-categorias" hidden>
-      <h2 class="card-titulo">Por categoría</h2>
-      <div class="resumen-categorias" id="resumen-categorias"></div>
-    </section>
-
-    <!-- Tendencia: gráfico de últimos meses -->
-    <section class="card" id="panel-tendencia" hidden>
-      <h2 class="card-titulo">Últimos meses</h2>
-      <p class="helper">Toca una barra para ver ese mes.</p>
-      <div class="grafico" id="grafico-meses"></div>
-    </section>
-
-    <!-- Calendario del mes -->
-    <section class="card" id="card-calendario" hidden>
-      <div class="lista-header">
-        <h2 class="card-titulo">Calendario</h2>
-        <span class="cal-mes" id="cal-mes-label"></span>
-      </div>
-      <div class="cal-dows" id="cal-dows"></div>
-      <div class="cal-grid" id="cal-grid"></div>
-    </section>
-
-    <!-- Listado -->
-    <section class="card">
-      <div class="lista-header">
-        <h2 class="card-titulo">Gastos del mes</h2>
-        <button class="btn-export" id="btn-export" type="button" title="Exportar a CSV (Excel)">⬇️ CSV</button>
-      </div>
-      <select id="filtro-categoria" class="filtro-cat"></select>
-      <div class="dia-filtro" id="dia-filtro" hidden>
-        <span id="dia-filtro-texto"></span>
-        <button class="btn-link" id="dia-filtro-clear" type="button">Ver todo el mes</button>
-      </div>
-      <div class="lista" id="lista-gastos"></div>
-      <p class="empty" id="lista-vacia" hidden>Aún no hay gastos en este mes. ¡Sube tu primera boleta!</p>
-    </section>
-
-    <footer class="pie">
-      <button class="btn-link danger" id="btn-borrar-todo" type="button">Borrar todos los datos</button>
-      <small>Tus datos se guardan solo en este dispositivo.</small>
-    </footer>
+      <div class="modal-body" id="items-modal-body"></div>
+    </div>
   </div>
 
   <script src="app.js"></script>

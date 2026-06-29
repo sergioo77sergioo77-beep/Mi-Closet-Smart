@@ -265,6 +265,80 @@ body {
 .gasto-borrar:active, .gasto-adjunto:active { background: var(--line); }
 .empty { color: var(--muted); text-align: center; padding: 18px 0; }
 
+/* Productos en el formulario */
+.items-bloque { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+.items-bloque-top { display: flex; align-items: center; justify-content: space-between; }
+.items-bloque-top strong { font-size: 15px; }
+.items-lista { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.item-fila { display: flex; gap: 8px; align-items: center; }
+.item-fila input.item-nombre { flex: 1; min-width: 0; }
+.item-fila input.item-precio { width: 96px; }
+.item-fila input {
+  border: 1.5px solid var(--line); border-radius: 10px; padding: 10px; font-size: 15px; color: var(--text); background: #fff;
+}
+.item-fila .item-quitar { background: none; border: none; font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px; }
+.items-total { text-align: right; font-size: 13px; color: var(--muted); }
+.items-vacio { color: var(--muted); font-size: 13px; padding: 4px 0; }
+
+/* Dashboard: KPIs */
+.dash-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.kpi { background: #f7f6fc; border-radius: 14px; padding: 14px; }
+.kpi .kpi-label { font-size: 12px; color: var(--muted); }
+.kpi .kpi-valor { font-size: 22px; font-weight: 800; margin-top: 4px; }
+.kpi .kpi-extra { font-size: 12px; margin-top: 2px; font-weight: 600; }
+.kpi .sube { color: var(--rojo); }
+.kpi .baja { color: var(--verde); }
+
+/* Ranking (comercios) */
+.ranking { display: flex; flex-direction: column; gap: 12px; }
+.rank-row { display: flex; flex-direction: column; gap: 6px; }
+.rank-top { display: flex; justify-content: space-between; font-size: 14px; }
+.rank-top strong { font-weight: 600; }
+.rank-top .rank-valor { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.rank-bar { height: 9px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.rank-bar span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #ffd24d, #ffb020); }
+
+/* Indicador de productos en la lista */
+.gasto-items-badge {
+  display: inline-block; margin-top: 3px; font-size: 11px; color: var(--primary-d);
+  background: #ece9fb; border-radius: 6px; padding: 1px 7px; cursor: pointer; font-weight: 600;
+}
+
+/* Navegación inferior */
+.nav-espacio { height: 76px; }
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex; background: #fff; border-top: 1px solid var(--line);
+  box-shadow: 0 -6px 20px rgba(40,30,90,.08);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 20;
+}
+.nav-btn {
+  flex: 1; background: none; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 0 12px; color: var(--muted); font-size: 12px;
+}
+.nav-btn span { font-size: 20px; }
+.nav-btn.activo { color: var(--primary); font-weight: 700; }
+
+/* Modal de productos */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(20,15,45,.5);
+  display: flex; align-items: flex-end; justify-content: center; z-index: 40;
+}
+.modal {
+  background: #fff; width: 100%; max-width: 520px;
+  border-radius: 22px 22px 0 0; padding: 18px;
+  max-height: 80vh; overflow-y: auto;
+}
+.modal-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.modal-top strong { font-size: 17px; }
+.modal-cerrar { background: #f1f0f7; border: none; border-radius: 10px; width: 34px; height: 34px; font-size: 16px; cursor: pointer; }
+.modal-item { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.modal-item:last-child { border-bottom: none; }
+.modal-item .mi-nombre { display: flex; align-items: center; gap: 8px; }
+.modal-item .mi-precio { font-weight: 700; white-space: nowrap; }
+
 .pie { text-align: center; margin-top: 8px; }
 .btn-link { background: none; border: none; font-size: 14px; font-weight: 600; cursor: pointer; padding: 6px; color: var(--primary); }
 .btn-link.danger { color: var(--rojo); }
